@@ -164,7 +164,28 @@ plot(census_final_2015_2019.lm.all)
 #b) Perform an ANOVA-based F test to determine whether the difference in explanatory
 #   power between these two models is significant.
 
-anova(census_final_2015_2019.lm, census_final_2015_2019.lm.all)
+#Let’s use the anova() function to compare these models and see which one provides the best parsimonious fit of the data.
+#This ANVOA will test whether or not including multiple predictor variables propcov,proppov,proprent,totpop,medage 
+#(both models use medhhinc) leads to a significant improvement over using just single predictor variable 'medhhinc'
+
+#ANOVA uses the following null and alternative hypotheses:
+  
+#H0: Single predictor is enough to predict the baccalaureate attainment rate (propbac)
+#HA: Single predictor is not enough to predict the baccalaureate attainment rate (propbac)
+
+#Compare model with single predictor to model with all predictor
+census_final_2015_2019_anova <- anova(census_final_2015_2019.lm, census_final_2015_2019.lm.all)
+census_final_2015_2019_anova
+summary(census_final_2015_2019_anova)
+
+#The F-statistic is the Variation between sample means/Variation within samples
+#The larger the F-statistic, the greater the variation between sample means relative to the variation within the samples
+#Thus, the larger the F-statistic, the greater the evidence that there is a difference between the group means
+
+#As you can see, the result shows a Df of 5 (indicating that the complex model has more additional parameter), 
+#and a very small p-value (< .0000001) which is smaller than 0.05. This means that adding the multiple predicator 
+#variables (propcov,proppov,proprent,totpop,medage) to the model did lead to a significantly improved 
+#fit over the model with single predictor. Hence rejecting the NULL hypothesis of the ANOVA
 
 
 #c) Plot the empirical densities of the residuals from these two models, with both
