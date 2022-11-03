@@ -27,6 +27,7 @@ install.packages("rgl")
 install.packages("ggiraph")
 install.packages("ggiraphExtra")
 install.packages("plyr")
+install.packages("Metrics")
 library(olsrr)
 library(tidycensus)
 library(tidyverse)
@@ -44,11 +45,8 @@ library(nptest)
 library(MASS)
 library(fitdistrplus)
 library(ggpubr)        # Functions for plotting the regression and a wide range of measures
-#library(scatterplot3d) #Plots a three dimensional (3D) point cloud
-#library(rgl)
-#library(ggiraph)
-#library(ggiraphExtra)
-#library(plyr)
+library(Metrics)
+
 
 # Enter Census API Key
 census_api_key("0c4a2a2815a8d526966f2490024ef157e19478db", overwrite = TRUE, install = TRUE)
@@ -87,7 +85,6 @@ census_wide_final_2015_2019 <- census_wide_2015_2019 %>%
          'medhhinc' = 'DP03_0062', 'propcov' = 'DP03_0096P', 'proppov' = 'DP03_0128P', 
          'proprent' = 'DP04_0047P', 'totpop' = 'DP05_0001', 'medage' = 'DP05_0018')
 
-
 ggplot(data = census_wide_final_2015_2019, aes(fill = propbac)) +
   geom_sf() + 
   scale_fill_distiller(palette = "YlGnBu", 
@@ -105,7 +102,9 @@ ggplot(data = census_wide_final_2015_2019, aes(fill = propbac)) +
         axis.ticks = element_blank(),
         panel.background = element_rect(fill = "grey", color = NA))
 
-
+rm(census_tidy_dropcols_2015_2019)
+rm(census_tidy_2015_2019)
+rm(census_wide_2015_2019)
 
 # ---
 # Perform Step 2
@@ -147,12 +146,8 @@ ggplot(census_final_2015_2019, aes(x=c(medhhinc), y=propbac)) +
   theme(plot.title = element_text(hjust=0.5, size=20, face='bold')) 
 
 
-#scatter3d(propbac ~ medhhinc + propcov, data=census_final_2015_2019)
-
-
 #Regression line with all predictors
 census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019)
-#census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc*propcov*proppov*proprent*totpop*medage, data = census_final_2015_2019)
 census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
 census_final_2015_2019.lm.all.summary
 
@@ -178,7 +173,7 @@ census_final_2015_2019_anova <- anova(census_final_2015_2019.lm, census_final_20
 census_final_2015_2019_anova
 summary(census_final_2015_2019_anova)
 
-#The F-statistic is the Variation between sample means/Variation within samples
+
 #The larger the F-statistic, the greater the variation between sample means relative to the variation within the samples
 #Thus, the larger the F-statistic, the greater the evidence that there is a difference between the group means
 
@@ -193,6 +188,113 @@ summary(census_final_2015_2019_anova)
 #   as you can. Be prepared to discuss whether the full model has not just added explanatory
 #   power, but improved the fit with OLS (Ordinary Least Squares) model assumptions.
 
-plot(ecdf(census_final_2015_2019.lm[['residuals']]))
-plot(ecdf(census_final_2015_2019.lm.all[['residuals']]))
 
+census_final_2015_2019.lm.residuals <- data.frame(residuals = census_final_2015_2019.lm[['residuals']])
+census_final_2015_2019.lm.residuals$model <- 'Single'
+census_final_2015_2019.lm.all.residuals <- data.frame(residuals = census_final_2015_2019.lm.all[['residuals']])
+census_final_2015_2019.lm.all.residuals$model <- 'All'
+
+ggplot() +
+    stat_ecdf(data = census_final_2015_2019.lm.residuals, col="red", aes(x = residuals, linetype = model), size = 1.2) +
+    stat_ecdf(data = census_final_2015_2019.lm.all.residuals, col="blue", aes(x = residuals, linetype = model), size = 1.2) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0)) +
+    scale_linetype_manual(values=c("solid", "dotted")) +
+    scale_color_manual(values = c("Single" = "red", "All" = "blue"),
+                       name="Model",
+                       breaks=c("Single", "All"),
+                       labels=c("Single Predictor", "All Predictors")) +
+    scale_size_manual(values=c(1, 1.5))+
+    labs(x='Residuals Distribution', 
+         y='Cumulative Probability Distribution',
+         title="Empirical Densities of the Residuals (Single versus Multiple Predictor Model)",
+         caption = "Data: 2015-2019 5-year ACS, US Census Bureau, Cook County, IL",
+         subtitle = sprintf("Adjusted R-squared (Single): %s, Actual Adjusted R-squared (Multiple): %s", 
+                            round(census_final_2015_2019.lm.summary$adj.r.squared, 4), 
+                            round(census_final_2015_2019.lm.all.summary$adj.r.squared, 4))) +
+    theme(plot.title = element_text(hjust=0.5, size=20, face='bold'), 
+          panel.border = element_blank(), panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+          panel.background = element_rect(fill = "white", color = NA),
+          legend.position = c(0.9, 0.5),
+          legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid", colour ="darkblue"))
+    theme_minimal()
+
+    
+# ---
+# Perform Step 3
+# In one to two paragraphs, summarize the difference in performance between the two models and make a recommendation 
+# of which to use when deciding future policy actions
+# ---
+
+#Mean Square Error(MSE)/Root Mean Square Error(RMSE)
+RMSE_model_1 <- sqrt(mean(census_final_2015_2019.lm.summary$residuals^2))
+sprintf("Root Mean Square Error(RMSE) for Model 1 : %s", round(RMSE_model_1, digits = 4))
+RMSE_model_2 <- sqrt(mean(census_final_2015_2019.lm.all.summary$residuals^2))
+sprintf("Root Mean Square Error(RMSE) for Model 2 : %s", round(RMSE_model_2, digits = 4))
+
+#Mean Absolute Error(MAE)
+MAE_model_1 <- mean(abs(census_final_2015_2019.lm.summary$residuals))
+sprintf("Mean Absolute Error(MAE) for Model 1 : %s", round(MAE_model_1, digits = 4))
+MAE_model_2 <- mean(abs(census_final_2015_2019.lm.all.summary$residuals))
+sprintf("Mean Absolute Error(MAE) for Model 2 : %s", round(MAE_model_2, digits = 4))
+
+
+#Three main metrics for model evaluation in regression. R-Square/Adjusted-R Square is better used to explain the model 
+#to other people because you can explain the number as a percentage of the output variability. MSE, RMSE, or MAE 
+#are better be used to compare performance between different regression models
+
+
+#For model 1 with one predictor 'median household income', the R-squared value is 0.5351 which means only 54% of the
+#dependent variable (baccalaureate attainment rate) can be explained by the model. 
+#For model 2 with all predictors, the R-squared value is 0.7149 which means 71% of the baccalaureate attainment rate
+#can be explained by the model. Also to prevent the overfitting problem in model 2, we have considered the Adjusted R-Square
+#which will penalize additional independent variables added to the model. Both R-squared and Adjusted R-Square are pretty closer
+#which tells model 2 out performs model 1 as it indicates a better fit between prediction and actual value.
+
+#Now comparing Root Mean Square Error(RMSE) between model 1 and model 2, model 2 value 6.8824 is slightly lower than
+#model 1 value 8.7887 which indicates the concentration of the data points for model 2 is closer to the line of
+#best fit than model 1.
+
+#Now comparing Mean Absolute Error(MAE) between model 1 and model 2, model 2 value 5.3849 is slightly lower than
+#model 1 value 6.9197 which indicates the sum of error is smaller and concentration of the data points for model 2 
+#is closer to the line of best fit than model 1
+
+
+# ---
+# Perform Step 4
+#Discuss amongst your group whether each of the predictors fit into one of these three categories
+# ---
+
+#a) Predictors with no significant explanatory power
+
+summary(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019))
+summary(lm(propbac ~ medhhinc+propcov+proppov+proprent, data = census_final_2015_2019))
+anova(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019))
+
+#For coefficient to be statistically significant, we usually want a P-value of less than 0.05. Here totpop (Total population) 
+#and medage (Median age) has P-value greater than 0.05 and hence has no significant explanatory power.
+#Besides without the predictors 'Total population' and 'Median age' added to the model, the R-squared and Adjusted R-squared are
+#negligible affected
+
+
+#b) Predictors with explanatory power, useful as control variables, but without a policy “lever” that 
+#decision makers could use to increase college degree attainment
+
+
+#Predictors like medhhinc (Median household income) has statistically significant explanatory power because it 
+#explains 53% of the baccalaureate attainment rate in the model.
+
+
+#c) Predictors with both explanatory power and a corresponding policy “lever”
+
+#proprent (Renter-occupied) has P-value way lesser than 0.05 and second biggest contributor to R-squared after medhhinc (Median household income). 
+#County executives has the power to increase the baccalaureate attainment rates by introducing new ordinances about what 
+#proportion of housing has to be available for rent or put like big penalties on high rise. 
+#For Condos you can do all sorts of things to change the proportion of renters and owners like giving subsidies to renters or 
+#subsidies to homeowners. So that's something where I think a decision maker, like an executive has a lever that they can pull
+
+#propcov (Health insurance coverage) can have some impact on increasing baccalaureate attainment rate if the government provides
+#free or lesser expensive medical coverage to household with lower income brackets
+
+    
