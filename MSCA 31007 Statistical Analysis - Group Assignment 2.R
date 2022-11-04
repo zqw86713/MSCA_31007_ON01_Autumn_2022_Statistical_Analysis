@@ -297,4 +297,104 @@ anova(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = censu
 #propcov (Health insurance coverage) can have some impact on increasing baccalaureate attainment rate if the government provides
 #free or lesser expensive medical coverage to household with lower income brackets
 
-    
+
+
+# ---
+# Perform Step 5
+#Make a proposal for increasing overall college degree attainment in Cook County by roughly 5
+#percentage points. The solution does not need to be politically feasible and you may assume
+#causal links without proving they exist. However, your proposal should still be data-driven
+#and you should back up your argument with output from your regression.
+# ---
+
+#Baseline values for dependent variable
+propbac_mean <- mean(census_final_2015_2019$propbac)
+
+#Baseline values for predictor variables
+medhhinc_mean <- mean(census_final_2015_2019$medhhinc)
+propcov_mean <- mean(census_final_2015_2019$propcov)
+proppov_mean <- mean(census_final_2015_2019$proppov)
+proprent_mean <- mean(census_final_2015_2019$proprent)
+
+#Do regression of all predictors
+census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent, data = census_final_2015_2019)
+census_final_2015_2019.lm.all.summary <- summary(lm(propbac ~ medhhinc+propcov+proppov+proprent, data = census_final_2015_2019))
+census_final_2015_2019.lm.all.summary
+
+#Predicting the existing average college degree attainment rate for Cook County
+attainment_rate_actual <- predict(census_final_2015_2019.lm.all, newdata= list(medhhinc=medhhinc_mean, propcov=propcov_mean, proppov=proppov_mean, proprent=proprent_mean))
+
+#Adjusting the predictor variable values to desired amount to get the 5% increase in 
+#college degree attainment rate for Cook County
+
+medhhinc_target <- medhhinc_mean +  (medhhinc_mean*5.5)/100
+propcov_target <- propcov_mean +  (propcov_mean*7)/100
+proppov_target <- proppov_mean - (proppov_mean*0.1)/100
+proprent_target <- proprent_mean +  (proprent_mean*5)/100
+
+attainment_rate_target <- predict(census_final_2015_2019.lm.all, newdata= list(medhhinc=medhhinc_target, propcov=propcov_target, proppov=proppov_target, proprent=proprent_target))
+
+#By increasing Median household income by 5.5%, Health insurance coverage by 7%, Renter-occupied by 5% and decreasing 
+#poverty level by 0.1%, we have roughly achieved the targeted college degree attainment rate for Cook County
+
+
+
+# ---
+# Perform Step 6
+#Using the Census Bureau API, pull the total population and college degree achievement levels
+#('DP05_0001E','DP02_0065PE') for every tract in the United States (using the 2015-19 5-year ACS estimates). 
+#Flag which tracts belong to Cook County, IL.
+# ---
+
+acs_var <- c('DP05_0001E','DP02_0065PE')
+us_states <- c("AK","AL","AR","AZ","CA","CO","CT","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY",
+               "LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY",
+               "OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY")
+all_census_tidy_2015_2019 <- get_acs(
+  geography = "tract", variables = acs_var, state = us_states, year = 2019, geometry = TRUE, survey = "acs5",
+  output = "wide"
+)
+
+#Flag which tracts belong to Cook County, IL
+all_census_tidy_2015_2019 <- all_census_tidy_2015_2019 %>%
+  mutate(iscookcounty = case_when(
+    str_detect(all_census_tidy_2015_2019$NAME, "Cook County, Illinois") ~ 1,
+    TRUE ~ 0
+  ))
+
+
+#a) Filter to tracts with non-missing population, non-missing college degree data, and
+#population of at least 100.
+
+
+# Remove the rows from dataframe that contains at least one NA
+all_census_tidy_2015_2019 <- na.omit(all_census_tidy_2015_2019)
+
+#Rename the remaining columns
+all_census_2015_2019 <- all_census_tidy_2015_2019 %>%  
+  rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065PE', 'totpop' = 'DP05_0001E')
+
+#Drop the columns that are not required
+all_census_2015_2019 <- all_census_2015_2019[,!(names(all_census_2015_2019) %in% c("DP05_0001M", "DP02_0065PM"))]
+
+#Filter to population of at least 100
+all_census_final_2015_2019 <- filter(all_census_2015_2019, totpop >= 100)
+
+#Remove the rows from dataframe that contains at least one NA
+all_census_final_2015_2019 <- na.omit(all_census_final_2015_2019)
+
+
+
+#b) Calculate the national average for tract-level college degree attainment, using both an
+#equal-weight average as well as weighting by population. For these calculations, exclude
+#Cook County, IL.
+
+all_census_exclude_cook_county_2015_2019 <- filter(all_census_final_2015_2019, iscookcounty == 0)
+
+all_census_exclude_cook_county_2015_2019["totpop_percentage"] = all_census_exclude_cook_county_2015_2019$totpop/(sum(all_census_exclude_cook_county_2015_2019$totpop))
+all_propbac_exclude_cook_county_mean <- mean(all_census_exclude_cook_county_2015_2019$propbac)
+all_propbac_exclude_cook_county_weighted_mean <- sum(all_census_exclude_cook_county_2015_2019$totpop_percentage*all_census_exclude_cook_county_2015_2019$propbac)
+
+
+sprintf("The national average for tract-level college degree attainment using both an equal-weight average as well as weighting by population exclude
+Cook County, IL is %s", round(all_propbac_exclude_cook_county_weighted_mean, digits = 4))
