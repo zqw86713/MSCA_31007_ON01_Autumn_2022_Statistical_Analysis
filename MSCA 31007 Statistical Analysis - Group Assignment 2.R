@@ -418,3 +418,48 @@ sprintf("The Cook County average for tract-level college degree attainment using
 
 #Cook County equal-weighted average college degree attainment rate is '22.2978' greater than the national average
 #of '19.4961'. Hence we are rejecting the NULL hypothesis (H0)
+
+# Perform Step 7
+#Identify the tract containing the Gleacher Center and NBC Tower. Note that the 2015-2019
+#ACS 5-year estimates use the 2010 Census tract boundaries. Restore your regression from the
+#previous week that predicted college degree attainment as a function of all the predictors
+#downloaded in the first group assignment.
+
+acs_var <- c('DP05_0001E','DP05_0018E','DP03_0062E','DP02_0065PE','DP03_0096PE','DP03_0128PE','DP04_0047PE')
+census_tidy_2015 <- get_acs(
+  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2015, geometry = TRUE, survey = "acs5",
+  output = "wide"
+)
+census_tidy_2016 <- get_acs(
+  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2016, geometry = TRUE, survey = "acs5",
+  output = "wide"
+)
+census_tidy_2017 <- get_acs(
+  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2017, geometry = TRUE, survey = "acs5",
+  output = "wide"
+)
+census_tidy_2018 <- get_acs(
+  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2018, geometry = TRUE, survey = "acs5",
+  output = "wide"
+)
+census_tidy_2019 <- get_acs(
+  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2019, geometry = TRUE, survey = "acs5",
+  output = "wide"
+)
+Tract_8008_tidy_2015_2019 <- rbind(census_tidy_2015,census_tidy_2016)
+Tract_8008_tidy_2015_2019 <- rbind(Tract_8008_tidy_2015_2019,census_tidy_2017)
+Tract_8008_tidy_2015_2019 <- rbind(Tract_8008_tidy_2015_2019,census_tidy_2018)
+Tract_8008_tidy_2015_2019 <- rbind(Tract_8008_tidy_2015_2019,census_tidy_2019)
+
+
+Tract_8008_tidy_2015_2019 <- Tract_8008_tidy_2015_2019 %>%  
+  rename('propbac' = 'DP02_0065PE', 'medhhinc' = 'DP03_0062E', 'propcov' = 'DP03_0096PE',
+         'proppov' = 'DP03_0128PE', 'proprent' = 'DP04_0047PE', 'totpop' = 'DP05_0001E', 'medage' = 'DP05_0018E')
+
+Tract_8008 <- Tract_8008_tidy_2015_2019[Tract_8008_tidy_2015_2019$GEOID==17031800800 & Tract_8008_tidy_2015_2019$NAME=='Census Tract 8008, Cook County, Illinois', ]
+keeps <- c("GEOID", "NAME", "propbac", "medhhinc", "propcov","proppov", "proprent", "totpop", "medage", "geometry")
+Tract_8008 <- Tract_8008[keeps]
+
+#Linear Model with all predictors
+Tract_8008.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = Tract_8008)
+summary(Tract_8008.lm.all)
