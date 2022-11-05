@@ -80,12 +80,12 @@ census_wide_2015_2019 <- census_tidy_dropcols_2015_2019 %>%
 # DP04_0047P -> proprent (Renter-occupied)
 # DP05_0001  -> totpop   (Total population)
 # DP05_0018  -> medage   (Median age)
-census_wide_final_2015_2019 <- census_wide_2015_2019 %>%  
+census_final_2015_2019 <- census_wide_2015_2019 %>%  
   rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065P', 
          'medhhinc' = 'DP03_0062', 'propcov' = 'DP03_0096P', 'proppov' = 'DP03_0128P', 
          'proprent' = 'DP04_0047P', 'totpop' = 'DP05_0001', 'medage' = 'DP05_0018')
 
-ggplot(data = census_wide_final_2015_2019, aes(fill = propbac)) +
+ggplot(data = census_final_2015_2019, aes(fill = propbac)) +
   geom_sf() + 
   scale_fill_distiller(palette = "YlGnBu", 
                        direction = 1, 
@@ -111,11 +111,6 @@ rm(census_wide_2015_2019)
 #Create a new regression which uses income as well as all the remaining variables (excluding geography) 
 #to predict college degree attainment levels.
 # ---
-
-# Drop the columns that contains geography
-drop_columns <- c("geoid")
-census_final_2015_2019 <- census_wide_final_2015_2019[,!(names(census_wide_final_2015_2019) %in% drop_columns)]
-st_geometry(census_final_2015_2019) <- NULL
 
 # Remove the rows from dataframe that contains at least one NA
 census_final_2015_2019 <- na.omit(census_final_2015_2019)
@@ -398,3 +393,28 @@ all_propbac_exclude_cook_county_weighted_mean <- sum(all_census_exclude_cook_cou
 
 sprintf("The national average for tract-level college degree attainment using both an equal-weight average as well as weighting by population exclude
 Cook County, IL is %s", round(all_propbac_exclude_cook_county_weighted_mean, digits = 4))
+
+
+#c) Perform a hypothesis test of whether the tracts from Cook County could share the same
+#equal-weighted average college degree attainment as the national average excluding Cook
+#County. Treat that national average as a known constant, not a random variable.
+
+#H0 -> Cook County could share the same equal-weighted average college degree attainment as the 
+#      national average excluding Cook County
+
+#H1 -> Cook County doesn't share the same equal-weighted average college degree attainment as the 
+#      national average excluding Cook County
+
+
+all_census_only_cook_county_2015_2019 <- filter(all_census_final_2015_2019, iscookcounty == 1)
+
+all_census_only_cook_county_2015_2019["totpop_percentage"] = all_census_only_cook_county_2015_2019$totpop/(sum(all_census_only_cook_county_2015_2019$totpop))
+all_propbac_only_cook_county_mean <- mean(all_census_only_cook_county_2015_2019$propbac)
+all_propbac_only_cook_county_weighted_mean <- sum(all_census_only_cook_county_2015_2019$totpop_percentage*all_census_only_cook_county_2015_2019$propbac)
+
+sprintf("The Cook County average for tract-level college degree attainment using equal-weight average by population 
+        is %s", round(all_propbac_only_cook_county_weighted_mean, digits = 4))
+
+
+#Cook County equal-weighted average college degree attainment rate is '22.2978' greater than the national average
+#of '19.4961'. Hence we are rejecting the NULL hypothesis (H0)
