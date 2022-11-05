@@ -463,3 +463,28 @@ Tract_8008 <- Tract_8008[keeps]
 #Linear Model with all predictors
 Tract_8008.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = Tract_8008)
 summary(Tract_8008.lm.all)
+
+#a) What is the point estimate and 90% confidence interval for the predicted college degree
+#attainment in this tract? Is the true college degree attainment for this tract contained in
+#that interval?
+
+#calculate population mean
+mean(Tract_8008$propbac, na.rm = TRUE)
+
+#find sample size, sample mean, and sample standard deviation
+n <- length(Tract_8008$propbac)
+xbar <- mean(Tract_8008$propbac, na.rm = TRUE)
+s <- sd(Tract_8008$propbac)
+
+#calculate margin of error
+margin <- qt(0.95,df=n-1)*s/sqrt(n)
+
+#calculate lower and upper bounds of confidence interval
+low <- xbar - margin
+low
+
+high <- xbar + margin
+high
+
+# The point estimate is 32.5 and the 90% confidence interval is between 31.06674
+# and 31.06674. So, the point estimate is within the 90% confidence interval.
