@@ -488,3 +488,16 @@ high
 
 # The point estimate is 32.5 and the 90% confidence interval is between 31.06674
 # and 31.06674. So, the point estimate is within the 90% confidence interval.
+
+#b) How does this point estimate and interval differ if you re-calculate the regression,
+#weighting by population?
+
+Tract_8008.lm.weighted <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage,
+                          data = Tract_8008, weights=totpop)
+
+summary(Tract_8008.lm.weighted)
+        
+#c) Using all of the betas and their standard errors estimated by your (unweighted)
+#regression, simulate 10,000 sets of possible betas. Use those 10,000 sets of betas to
+#calculate 10,000 predictions for the Gleacher/NBC tract. Compare a 90% interval formed
+#from these simulations to the 90% CI produced in (a) above.
