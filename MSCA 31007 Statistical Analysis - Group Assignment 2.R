@@ -58,7 +58,7 @@ census_api_key("0c4a2a2815a8d526966f2490024ef157e19478db", overwrite = TRUE, ins
 #which linked household income with college degree attainment.
 
 
-# a) Define specific ACS variables we need to pull
+# 1.a Define specific ACS variables we need to pull
 # And, bring in tract-level data from the 2015-2019 American Community Survey (ACS) 5-year estimates for Cook County, IL
 # 5-year ACS with the argument survey = "acs5", starting from 2015 till 2019
 acs_var <- c('DP05_0001E','DP05_0018E','DP03_0062E','DP02_0065PE','DP03_0096PE','DP03_0128PE','DP04_0047PE')
@@ -66,13 +66,13 @@ census_tidy_2015_2019 <- get_acs(
   geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2019, geometry = TRUE, survey = "acs5"
 )
 
-# b) Drop the columns which report margin of error
+# 1.b Drop the columns which report margin of error
 census_tidy_dropcols_2015_2019 <- census_tidy_2015_2019[,!(names(census_tidy_2015_2019) %in% "moe")]
 # Format your output as a ‘wide’ table, not a ‘tidy’ table
 census_wide_2015_2019 <- census_tidy_dropcols_2015_2019 %>% 
   pivot_wider(names_from = 'variable', values_from = c('estimate'))
 
-# c) Rename the remaining columns
+# 1.c Rename the remaining columns
 # DP02_0065P -> propbac  (Bachelor's degree)
 # DP03_0062  -> medhhinc (Median household income)
 # DP03_0096P -> propcov  (Health insurance coverage)
@@ -116,7 +116,7 @@ rm(census_wide_2015_2019)
 census_final_2015_2019 <- na.omit(census_final_2015_2019)
 
 
-#a) What is the change in R^2 between the model with a single predictor and the model with
+# 2.a What is the change in R^2 between the model with a single predictor and the model with
 #   all predictors? Consider a real-world interpretation for this difference.
 
 #Regression line with single predictor
@@ -151,7 +151,7 @@ layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
 plot(census_final_2015_2019.lm.all)
 
 
-#b) Perform an ANOVA-based F test to determine whether the difference in explanatory
+# 2.b Perform an ANOVA-based F test to determine whether the difference in explanatory
 #   power between these two models is significant.
 
 #Let’s use the anova() function to compare these models and see which one provides the best parsimonious fit of the data.
@@ -178,7 +178,7 @@ summary(census_final_2015_2019_anova)
 #fit over the model with single predictor. Hence rejecting the NULL hypothesis of the ANOVA
 
 
-#c) Plot the empirical densities of the residuals from these two models, with both
+#- 2.c Plot the empirical densities of the residuals from these two models, with both
 #   distributions appearing on the same graph. Make the graph as close to publication-ready
 #   as you can. Be prepared to discuss whether the full model has not just added explanatory
 #   power, but improved the fit with OLS (Ordinary Least Squares) model assumptions.
@@ -261,7 +261,7 @@ sprintf("Mean Absolute Error(MAE) for Model 2 : %s", round(MAE_model_2, digits =
 #Discuss amongst your group whether each of the predictors fit into one of these three categories
 # ---
 
-#a) Predictors with no significant explanatory power
+# 4.a Predictors with no significant explanatory power
 
 summary(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019))
 summary(lm(propbac ~ medhhinc+propcov+proppov+proprent, data = census_final_2015_2019))
@@ -273,7 +273,7 @@ anova(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = censu
 #negligible affected
 
 
-#b) Predictors with explanatory power, useful as control variables, but without a policy “lever” that 
+# 4.b Predictors with explanatory power, useful as control variables, but without a policy “lever” that 
 #decision makers could use to increase college degree attainment
 
 
@@ -281,7 +281,7 @@ anova(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = censu
 #explains 53% of the baccalaureate attainment rate in the model.
 
 
-#c) Predictors with both explanatory power and a corresponding policy “lever”
+# 4.c Predictors with both explanatory power and a corresponding policy “lever”
 
 #proprent (Renter-occupied) has P-value way lesser than 0.05 and second biggest contributor to R-squared after medhhinc (Median household income). 
 #County executives has the power to increase the baccalaureate attainment rates by introducing new ordinances about what 
@@ -358,7 +358,7 @@ all_census_tidy_2015_2019 <- all_census_tidy_2015_2019 %>%
   ))
 
 
-#a) Filter to tracts with non-missing population, non-missing college degree data, and
+# 6.a Filter to tracts with non-missing population, non-missing college degree data, and
 #population of at least 100.
 
 
@@ -380,7 +380,7 @@ all_census_final_2015_2019 <- na.omit(all_census_final_2015_2019)
 
 
 
-#b) Calculate the national average for tract-level college degree attainment, using both an
+# 6.b Calculate the national average for tract-level college degree attainment, using both an
 #equal-weight average as well as weighting by population. For these calculations, exclude
 #Cook County, IL.
 
@@ -395,7 +395,7 @@ sprintf("The national average for tract-level college degree attainment using bo
 Cook County, IL is %s", round(all_propbac_exclude_cook_county_weighted_mean, digits = 4))
 
 
-#c) Perform a hypothesis test of whether the tracts from Cook County could share the same
+# 6.c Perform a hypothesis test of whether the tracts from Cook County could share the same
 #equal-weighted average college degree attainment as the national average excluding Cook
 #County. Treat that national average as a known constant, not a random variable.
 
@@ -439,7 +439,7 @@ census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
 census_final_2015_2019.lm.all.summary
 
 
-#a) What is the point estimate and 90% confidence interval for the predicted college degree
+# 7.a What is the point estimate and 90% confidence interval for the predicted college degree
 #attainment in this tract? Is the true college degree attainment for this tract contained in
 #that interval?
 
@@ -467,7 +467,7 @@ sprintf("The true college degree attainment for this tract is %s and its not con
         round(census_tract_814_03$propbac, digits = 4))
 
 
-#b) How does this point estimate and interval differ if you re-calculate the regression,
+# 7.b How does this point estimate and interval differ if you re-calculate the regression,
 #weighting by population?
 
 
@@ -496,7 +496,7 @@ sprintf("90 percentage confidence interval for the predicted college degree atta
         round(census_tract_814_03_prediction_result[,3], digits = 4))
 
 
-#c) Using all of the betas and their standard errors estimated by your (unweighted)
+# 7.c Using all of the betas and their standard errors estimated by your (unweighted)
 #regression, simulate 10,000 sets of possible betas. Use those 10,000 sets of betas to
 #calculate 10,000 predictions for the Gleacher/NBC tract. Compare a 90% interval formed
 #from these simulations to the 90% CI produced in (a) above.
