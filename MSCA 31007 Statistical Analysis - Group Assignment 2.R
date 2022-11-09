@@ -419,84 +419,83 @@ sprintf("The Cook County average for tract-level college degree attainment using
 #Cook County equal-weighted average college degree attainment rate is '22.2978' greater than the national average
 #of '19.4961'. Hence we are rejecting the NULL hypothesis (H0)
 
-# Perform Step 7
-#Identify the tract containing the Gleacher Center and NBC Tower. Note that the 2015-2019
-#ACS 5-year estimates use the 2010 Census tract boundaries. Restore your regression from the
-#previous week that predicted college degree attainment as a function of all the predictors
-#downloaded in the first group assignment.
-
-acs_var <- c('DP05_0001E','DP05_0018E','DP03_0062E','DP02_0065PE','DP03_0096PE','DP03_0128PE','DP04_0047PE')
-census_tidy_2015 <- get_acs(
-  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2015, geometry = TRUE, survey = "acs5",
-  output = "wide"
-)
-census_tidy_2016 <- get_acs(
-  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2016, geometry = TRUE, survey = "acs5",
-  output = "wide"
-)
-census_tidy_2017 <- get_acs(
-  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2017, geometry = TRUE, survey = "acs5",
-  output = "wide"
-)
-census_tidy_2018 <- get_acs(
-  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2018, geometry = TRUE, survey = "acs5",
-  output = "wide"
-)
-census_tidy_2019 <- get_acs(
-  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2019, geometry = TRUE, survey = "acs5",
-  output = "wide"
-)
-Tract_8008_tidy_2015_2019 <- rbind(census_tidy_2015,census_tidy_2016)
-Tract_8008_tidy_2015_2019 <- rbind(Tract_8008_tidy_2015_2019,census_tidy_2017)
-Tract_8008_tidy_2015_2019 <- rbind(Tract_8008_tidy_2015_2019,census_tidy_2018)
-Tract_8008_tidy_2015_2019 <- rbind(Tract_8008_tidy_2015_2019,census_tidy_2019)
 
 
-Tract_8008_tidy_2015_2019 <- Tract_8008_tidy_2015_2019 %>%  
-  rename('propbac' = 'DP02_0065PE', 'medhhinc' = 'DP03_0062E', 'propcov' = 'DP03_0096PE',
-         'proppov' = 'DP03_0128PE', 'proprent' = 'DP04_0047PE', 'totpop' = 'DP05_0001E', 'medage' = 'DP05_0018E')
+#7) Identify the tract containing the Gleacher Center and NBC Tower. Note that the 2015-2019 ACS 5-year 
+#estimates use the 2010 Census tract boundaries. Restore your regression from the previous week that 
+#predicted college degree attainment as a function of all the predictors downloaded in the first group assignment.
 
-Tract_8008 <- Tract_8008_tidy_2015_2019[Tract_8008_tidy_2015_2019$GEOID==17031800800 & Tract_8008_tidy_2015_2019$NAME=='Census Tract 8008, Cook County, Illinois', ]
-keeps <- c("GEOID", "NAME", "propbac", "medhhinc", "propcov","proppov", "proprent", "totpop", "medage", "geometry")
-Tract_8008 <- Tract_8008[keeps]
 
-#Linear Model with all predictors
-Tract_8008.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = Tract_8008)
-summary(Tract_8008.lm.all)
+#Identify the tract containing the Gleacher Center and NBC Tower
+
+#Step1 : Goto https://censusreporter.org/profiles
+#Step2 : To get the tract containing the Gleacher Center and NBC Tower, search for term 'Census Tract 814.03, Cook, IL'
+
+census_tract_814_03 <- filter(census_final_2015_2019, str_detect(census_final_2015_2019$name, "814.03"))
+
+#Liner model with all predictors
+census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019)
+census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
+census_final_2015_2019.lm.all.summary
+
 
 #a) What is the point estimate and 90% confidence interval for the predicted college degree
 #attainment in this tract? Is the true college degree attainment for this tract contained in
 #that interval?
 
-#calculate population mean
-mean(Tract_8008$propbac, na.rm = TRUE)
 
-#find sample size, sample mean, and sample standard deviation
-n <- length(Tract_8008$propbac)
-xbar <- mean(Tract_8008$propbac, na.rm = TRUE)
-s <- sd(Tract_8008$propbac)
+census_tract_814_03_drop_columns <- c("geoid", "name", "geometry", "propbac")
+census_tract_814_03_new <- census_tract_814_03[,!(names(census_tract_814_03) %in% census_tract_814_03_drop_columns)]
+st_geometry(census_tract_814_03_new) <- NULL
 
-#calculate margin of error
-margin <- qt(0.95,df=n-1)*s/sqrt(n)
 
-#calculate lower and upper bounds of confidence interval
-low <- xbar - margin
-low
+# Predicts the future values
+#A prediction interval captures the uncertainty around a single value. 
+#A confidence interval captures the uncertainty around the mean predicted values. 
+#Thus, a prediction interval will always be wider than a confidence interval for the same value.
+census_tract_814_03_prediction_result <- predict(census_final_2015_2019.lm.all, 
+        newdata = census_tract_814_03_new,
+        interval = c("confidence"),
+        level = 0.90)
 
-high <- xbar + margin
-high
+sprintf("The point estimate for the predicted college degree attainment in this tract is %s", 
+        round(census_tract_814_03_prediction_result[,1], digits = 4))
+sprintf("90 percentage confidence interval for the predicted college degree attainment in this tract is %s and %s", 
+        round(census_tract_814_03_prediction_result[,2], digits = 4),
+        round(census_tract_814_03_prediction_result[,3], digits = 4))
+sprintf("The true college degree attainment for this tract is %s and its not contained in the 90 percentage confidence interval",
+        round(census_tract_814_03$propbac, digits = 4))
 
-# The point estimate is 32.5 and the 90% confidence interval is between 31.06674
-# and 31.06674. So, the point estimate is within the 90% confidence interval.
 
 #b) How does this point estimate and interval differ if you re-calculate the regression,
 #weighting by population?
 
-Tract_8008.lm.weighted <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage,
-                          data = Tract_8008, weights=totpop)
 
-summary(Tract_8008.lm.weighted)
-        
+totpop_weights <- census_final_2015_2019$totpop/sum(census_final_2015_2019$totpop)
+
+census_final_2015_2019.lm.all.weighted <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019, weights = totpop_weights)
+census_final_2015_2019.lm.all.weighted.summary <- summary(census_final_2015_2019.lm.all.weighted)
+census_final_2015_2019.lm.all.weighted.summary
+
+
+census_tract_814_03_prediction_result_weighted <- predict(census_final_2015_2019.lm.all.weighted, 
+                                                 newdata = census_tract_814_03_new,
+                                                 interval = c("confidence"),
+                                                 level = 0.90)
+
+sprintf("The point estimate for the predicted college degree attainment after weighting by population for this tract 
+ is %s and marginally lower than the previous value of %s", 
+        round(census_tract_814_03_prediction_result_weighted[,1], digits = 4),
+        round(census_tract_814_03_prediction_result[,1], digits = 4))
+
+sprintf("90 percentage confidence interval for the predicted college degree attainment after weighting by population for this tract 
+ is %s and %s and marginally smaller than the previous value of %s and %s",
+        round(census_tract_814_03_prediction_result_weighted[,2], digits = 4),
+        round(census_tract_814_03_prediction_result_weighted[,3], digits = 4),
+        round(census_tract_814_03_prediction_result[,2], digits = 4),
+        round(census_tract_814_03_prediction_result[,3], digits = 4))
+
+
 #c) Using all of the betas and their standard errors estimated by your (unweighted)
 #regression, simulate 10,000 sets of possible betas. Use those 10,000 sets of betas to
 #calculate 10,000 predictions for the Gleacher/NBC tract. Compare a 90% interval formed
