@@ -431,6 +431,22 @@ sprintf("The Cook County average for tract-level college degree attainment using
 #Step1 : Goto https://censusreporter.org/profiles
 #Step2 : To get the tract containing the Gleacher Center and NBC Tower, search for term 'Census Tract 814.03, Cook, IL'
 
+# 0814.03 as of 2022, GEO ID 17031081403
+# uctract <- df[df$geoid == "17031081403",]
+# uctract <- uctract[c("totpop","medage","medhhinc","propcov","proppov","proprent")]
+
+# gleacher center and nbc tower lon and lat coords
+# locations <- data.frame(longitude = c(-87.622240,-87.621150), latitude = c(41.889640,41.890100))
+# Trying to plot
+# ggplot(data = uctract) + 
+#  geom_sf() +
+#  geom_point(data = locations, aes(x = longitude, y = latitude), color="red") +
+#  labs(title = "Tract: 813.03, Geo ID: 17031081403",
+#      subtitle = "Gleacher Center and NBC Tower",
+#      caption = "Data: 2015-2019 5-year ACS, US Census Bureau, Cook County, IL",
+#      fill = "Percentage") + 
+#  theme_minimal()
+
 census_tract_814_03 <- filter(census_final_2015_2019, str_detect(census_final_2015_2019$name, "814.03"))
 
 #Liner model with all predictors
