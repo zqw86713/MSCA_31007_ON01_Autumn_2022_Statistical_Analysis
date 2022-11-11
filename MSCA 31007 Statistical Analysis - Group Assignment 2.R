@@ -28,6 +28,7 @@ install.packages("ggiraph")
 install.packages("ggiraphExtra")
 install.packages("plyr")
 install.packages("Metrics")
+install.packages('leaps')
 library(olsrr)
 library(tidycensus)
 library(tidyverse)
@@ -46,7 +47,7 @@ library(MASS)
 library(fitdistrplus)
 library(ggpubr)        # Functions for plotting the regression and a wide range of measures
 library(Metrics)
-
+library(leaps)
 
 # Enter Census API Key
 census_api_key("0c4a2a2815a8d526966f2490024ef157e19478db", overwrite = TRUE, install = TRUE)
@@ -421,10 +422,12 @@ sprintf("The Cook County average for tract-level college degree attainment using
 
 
 
-#7) Identify the tract containing the Gleacher Center and NBC Tower. Note that the 2015-2019 ACS 5-year 
+# ---
+# Perform Step 7
+#Identify the tract containing the Gleacher Center and NBC Tower. Note that the 2015-2019 ACS 5-year 
 #estimates use the 2010 Census tract boundaries. Restore your regression from the previous week that 
 #predicted college degree attainment as a function of all the predictors downloaded in the first group assignment.
-
+# ---
 
 #Identify the tract containing the Gleacher Center and NBC Tower
 
@@ -520,20 +523,27 @@ sprintf("90 percentage confidence interval for the predicted college degree atta
 
 #TODO
 
-#8) Prepare a brief (at most 1-page) memo to someone who has asked you to model college degree
+# ---
+# Perform Step 8
+#Prepare a brief (at most 1-page) memo to someone who has asked you to model college degree
 #attainment using a linear model. Assume they have already seen the raw model output and
 #that they know how to read it. Discuss your confidence in a new public school program
 #encouraging college attendance, which will target the tracts with residuals in the lowest
 #quartile, with reference to your findings in 6) and 7) above and anything else that seems
 #relevant.
+# ---
 
 
 #TODO
 
-#9) As a change from previous weeks, consider the tract-level proportion of households living
+
+# ---
+# Perform Step 9
+#As a change from previous weeks, consider the tract-level proportion of households living
 #below the poverty line ('DP03_0128PE'). Select ten numeric ACS variables which you think
 #may be explanatory variables for tract-level poverty rates – note: do not select any variables
 #which directly measure income.
+# ---
 
 
 acs_var <- c('DP05_0001E','DP05_0018E','DP03_0062E','DP02_0065PE',
@@ -681,3 +691,13 @@ RMSE_census_final_2015_2019_below_proverty <- summary(lm(formula = proppov ~ fam
 
 
 #---------------------------------------------------Q9::END SUMMARY--------------------------------------------------------#
+
+
+
+# ---
+# Perform Step 10
+#Experiment with possible transformations. Consider at least one transformation to the
+#response variable and at least one transformation of a predictor. Transformations can
+#include logs or roots or powers of variables, but also functions of two different variables, or
+#step functions derived from continuous predictors.
+# ---
