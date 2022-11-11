@@ -516,3 +516,168 @@ sprintf("90 percentage confidence interval for the predicted college degree atta
 #regression, simulate 10,000 sets of possible betas. Use those 10,000 sets of betas to
 #calculate 10,000 predictions for the Gleacher/NBC tract. Compare a 90% interval formed
 #from these simulations to the 90% CI produced in (a) above.
+
+
+#TODO
+
+#8) Prepare a brief (at most 1-page) memo to someone who has asked you to model college degree
+#attainment using a linear model. Assume they have already seen the raw model output and
+#that they know how to read it. Discuss your confidence in a new public school program
+#encouraging college attendance, which will target the tracts with residuals in the lowest
+#quartile, with reference to your findings in 6) and 7) above and anything else that seems
+#relevant.
+
+
+#TODO
+
+#9) As a change from previous weeks, consider the tract-level proportion of households living
+#below the poverty line ('DP03_0128PE'). Select ten numeric ACS variables which you think
+#may be explanatory variables for tract-level poverty rates – note: do not select any variables
+#which directly measure income.
+
+
+acs_var <- c('DP05_0001E','DP05_0018E','DP03_0062E','DP02_0065PE',
+             'DP03_0096PE','DP03_0128PE','DP04_0047PE', "DP03_0136PE",
+             "DP03_0074PE", "DP03_0075PE", "DP04_0045PE", "DP04_0063PE",
+             "DP04_0065PE", "DP04_0093PE", "DP04_0126PE", "DP04_0057PE",
+             "DP02_0153PE", "DP03_0024PE", "DP03_0021PE")
+census_wide_2015_2019 <- get_acs(
+  geography = "tract", variables = acs_var, county = "Cook", state = "IL", year = 2019, geometry = TRUE, survey = "acs5", 
+  output = "wide"
+)
+
+#Poverty Line Illinois
+#Instead of the traditional 138 percent above the federal poverty line calculation, Illinois uses 
+#200 percent above the federal poverty line. So a family of four that earns $4,367 a month or less 
+#would qualify for benefits.
+#https://www.irp.wisc.edu/resources/how-is-poverty-measured/
+
+#Filter tract-level proportion of households living below the poverty line ('DP03_0128PE')
+#census_wide_2015_2019_below_proverty <- filter(census_wide_2015_2019, DP03_0062E <= (2208*12))
+
+#Mean poverty line w.r.t to poverty level income number (2208*12) and family size of 4 is 42%
+census_wide_2015_2019_below_proverty <- filter(census_wide_2015_2019, DP03_0128PE >= 42)
+
+# Rename the remaining columns
+# DP02_0065PE  -> propbac               (Bachelor's degree)
+# DP03_0062E   -> medhhinc              (Median household income)
+# DP03_0096PE  -> propcov               (Health insurance coverage)
+# DP03_0128PE  -> proppov               (POVERTY LEVEL)
+# DP05_0001E   -> totpop                (Total population)
+# DP05_0018E   -> medage                (Median age)
+# DP03_0136PE  -> familysize            (People in families)
+# DP03_0074PE  -> foodstamp             (Food Stamp/SNAP benefits)
+# DP03_0075PE  -> addedbenefits         (INCOME AND BENEFITS)
+# DP04_0045PE  -> housingtenure         (HOUSING TENURE!!Occupied housing units)
+# DP04_0047PE  -> proprent              (Renter-occupied)
+# DP04_0063PE  -> proputilgas           (Occupied housing units!!Utility gas)
+# DP04_0065PE  -> proputilelectric      (Occupied housing units!!Electricity)
+# DP04_0093PE  -> propmortgage          (Housing units with a mortgage)
+# DP04_0126PE  -> proppayrent           (Occupied units paying rent)
+# DP04_0057PE  -> propvehicles          (Occupied housing units!!VEHICLES AVAILABLE)
+# DP02_0153PE  -> propinternet          (Total households!!With a broadband Internet subscription)
+# DP03_0024PE  -> propwrkfromhome       (COMMUTING TO WORK!!Worked from home)
+# DP03_0021PE  -> proppublictranstowrk  (COMMUTING TO WORK!!Public transportation)
+
+census_final_2015_2019_below_proverty <- census_wide_2015_2019_below_proverty %>%  
+  rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065PE', 
+         'medhhinc' = 'DP03_0062E', 'propcov' = 'DP03_0096PE', 'proppov' = 'DP03_0128PE', 
+         'proprent' = 'DP04_0047PE', 'totpop' = 'DP05_0001E', 'medage' = 'DP05_0018E', 
+         'familysize' = 'DP03_0136PE', 'foodstamp' = 'DP03_0074PE',
+         'addedbenefits' = 'DP03_0075PE', 'housingtenure' = 'DP04_0045PE',
+         'proputilgas' = 'DP04_0063PE', 'proputilelectric' = 'DP04_0065PE',
+         'propmortgage' = 'DP04_0093PE', 'proppayrent' = 'DP04_0126PE',
+         'propvehicles' = 'DP04_0057PE', 'propinternet' = 'DP02_0153PE',
+         'propwrkfromhome' = 'DP03_0024PE', 'proppublictranstowrk' = 'DP03_0021PE')
+
+# Drop the columns which report margin of error plus others
+census_final_2015_2019_below_proverty_drop_columns <- c("DP02_0065PM", "DP03_0062M", "DP05_0001M", 
+                                              "DP05_0018M", "DP03_0096PM", "DP03_0128PM",
+                                              "DP04_0047PM", "DP03_0136PM", "DP03_0074PM",
+                                              "DP03_0075PM", "DP04_0045PM", "DP04_0063PM",
+                                              "DP04_0065PM", "DP04_0093PM", "DP04_0126PM",
+                                              "DP04_0057PM", "DP02_0153PM", "DP03_0024PM", 
+                                              "DP03_0021PM")
+census_final_2015_2019_below_proverty <- census_final_2015_2019_below_proverty[,!(names(census_final_2015_2019_below_proverty) 
+                                                                                %in% census_final_2015_2019_below_proverty_drop_columns)]
+
+
+#Ten numeric ACS variables which we think may be explanatory variables for tract-level poverty rates
+#medhhinc,propcov,familysize,foodstamp,addedbenefits,
+#propmortgage,proppayrent,propinternet,propwrkfromhome,
+#proppublictranstowrk
+
+
+# 9.a Check to make sure that all of your predictors are at least 90% non-missing.
+
+# Remove the rows from dataframe that contains at least one NA
+census_final_2015_2019_below_proverty <- na.omit(census_final_2015_2019_below_proverty)
+st_geometry(census_final_2015_2019_below_proverty) <- NULL
+
+# 9.b Select either AIC or Adjusted R^2 as a metric, and then choose either the best possible
+#     model or a good model suggested by model selection algorithms.
+
+
+# 9.b.1 Make upfront modeling choices
+head(census_final_2015_2019_below_proverty)
+census_final_2015_2019_below_proverty.naive.lm <- lm(proppov~medhhinc+propcov+familysize+foodstamp+addedbenefits+
+                                                     propmortgage+proppayrent+propinternet+propwrkfromhome+
+                                                     proppublictranstowrk+proputilelectric+proputilgas, census_final_2015_2019_below_proverty)
+summary(census_final_2015_2019_below_proverty.naive.lm)
+
+# 9.b.2 Test IID assumptions
+hist(census_final_2015_2019_below_proverty.naive.lm$residuals)
+ks.test(census_final_2015_2019_below_proverty.naive.lm$residuals/summary(census_final_2015_2019_below_proverty.naive.lm)$sigma, pnorm)
+
+plot(census_final_2015_2019_below_proverty.naive.lm$fitted.values,census_final_2015_2019_below_proverty.naive.lm$residuals)
+bptest(census_final_2015_2019_below_proverty.naive.lm)
+
+# 9.b.3 Identify best model based on Adj R^2
+census_final_2015_2019_below_proverty_reginfo <- regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-4,-6,-8,-9,-13,-14,-15,-18,-22)],y = census_final_2015_2019_below_proverty[,8])
+summary(census_final_2015_2019_below_proverty_reginfo)$outmat
+summary(census_final_2015_2019_below_proverty_reginfo)$adjr2
+
+# 9.b.4 Identify best model based on forward selection
+step(lm(proppov~1, census_final_2015_2019_below_proverty),scope=formula(census_final_2015_2019_below_proverty.naive.lm),direction='forward')
+
+# 9.b.4 Identify best model based on backward elimination
+step(census_final_2015_2019_below_proverty.naive.lm,direction='backward')
+
+
+# 9.c Save the RMSE (root mean square error, or ‘sigma’) for later.
+RMSE_census_final_2015_2019_below_proverty <- summary(lm(formula = proppov ~ familysize + propcov+ medhhinc + propmortgage + 
+                                                           addedbenefits + propwrkfromhome, data = census_final_2015_2019_below_proverty))$sigma
+
+
+#---------------------------------------------------Q9::BEGIN SUMMARY--------------------------------------------------------#
+#We feel below are the ten numeric ACS variables which we think may be explanatory variables for tract-level poverty rates
+
+
+#medhhinc              (Median household income)
+#propcov               (Health insurance coverage)
+#familysize            (People in families)
+#foodstamp             (Food Stamp/SNAP benefits)
+#addedbenefits         (INCOME AND BENEFITS)
+#propmortgage          (Housing units with a mortgage)
+#proppayrent           (Occupied units paying rent)
+#propinternet          (Total households!!With a broadband Internet subscription)
+#propwrkfromhome       (COMMUTING TO WORK!!Worked from home)
+#proppublictranstowrk  (COMMUTING TO WORK!!Public transportation)
+#proputilgas           (Occupied housing units!!Utility gas)
+#proputilelectric      (Occupied housing units!!Electricity)
+
+#As per Kolmogorov-Smirnov Test, the p-value is greater than .05, we accept the NULL hypothesis and 
+#have sufficient evidence to say that the sample data does come from a normal distribution
+
+#As per Breusch-Pagan Test, the residuals become much more spread out as the fitted values get larger. 
+#This “cone” shape is a telltale sign of heteroscedasticity. The corresponding p-value is 0.0042. 
+#Since the p-value is less than 0.05, we reject the null hypothesis and have sufficient evidence 
+#to say that heteroscedasticity is present in the regression model.
+
+#Then, we ran the model on Adjusted R^2 model selection algorithm and have identified model with Adj. R^2 
+#value of 0.6837 as the good model. This model considers the predictors such as 'Median household income', 
+#'Health insurance coverage','People in families','Income and Benefits','Housing units with a mortgage',
+#'Worked from home' as the key contributor in predicting tract-level household poverty rates
+
+
+#---------------------------------------------------Q9::END SUMMARY--------------------------------------------------------#
