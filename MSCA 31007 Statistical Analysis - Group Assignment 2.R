@@ -364,6 +364,7 @@ all_census_tidy_2015_2019 <- all_census_tidy_2015_2019 %>%
 
 
 # Remove the rows from dataframe that contains at least one NA
+all_census_tidy_2015_2019_test <- all_census_tidy_2015_2019[!(is.na(all_census_tidy_2015_2019$DP02_0065PE) | is.na(all_census_tidy_2015_2019$DP05_0001E)), ]
 all_census_tidy_2015_2019 <- na.omit(all_census_tidy_2015_2019)
 
 #Rename the remaining columns
@@ -385,6 +386,7 @@ all_census_final_2015_2019 <- na.omit(all_census_final_2015_2019)
 #equal-weight average as well as weighting by population. For these calculations, exclude
 #Cook County, IL.
 
+#Exclude- Cook County, IL.
 all_census_exclude_cook_county_2015_2019 <- filter(all_census_final_2015_2019, iscookcounty == 0)
 
 all_census_exclude_cook_county_2015_2019["totpop_percentage"] = all_census_exclude_cook_county_2015_2019$totpop/(sum(all_census_exclude_cook_county_2015_2019$totpop))
@@ -613,8 +615,10 @@ census_final_2015_2019_below_proverty <- census_final_2015_2019_below_proverty[,
 
 
 #Ten numeric ACS variables which we think may be explanatory variables for tract-level poverty rates
-#medhhinc,propcov,familysize,foodstamp,addedbenefits,
-#propmortgage,proppayrent,propinternet,propwrkfromhome,
+#propcov,familysize,foodstamp,
+#propmortgage,proppayrent,
+#proputilgas,proputilelectric
+#propinternet,propwrkfromhome,
 #proppublictranstowrk
 
 
@@ -630,8 +634,9 @@ st_geometry(census_final_2015_2019_below_proverty) <- NULL
 
 # 9.b.1 Make upfront modeling choices
 head(census_final_2015_2019_below_proverty)
-census_final_2015_2019_below_proverty.naive.lm <- lm(proppov~medhhinc+propcov+familysize+foodstamp+addedbenefits+
-                                                     propmortgage+proppayrent+propinternet+propwrkfromhome+
+census_final_2015_2019_below_proverty.naive.lm <- lm(proppov~propcov+familysize+foodstamp+
+                                                     propmortgage+proppayrent+
+                                                     propinternet+propwrkfromhome+
                                                      proppublictranstowrk+proputilelectric+proputilgas, census_final_2015_2019_below_proverty)
 summary(census_final_2015_2019_below_proverty.naive.lm)
 
@@ -643,10 +648,12 @@ plot(census_final_2015_2019_below_proverty.naive.lm$fitted.values,census_final_2
 bptest(census_final_2015_2019_below_proverty.naive.lm)
 
 # 9.b.3 Identify best model based on Adj R^2
-census_final_2015_2019_below_proverty_best_subset  <- regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-4,-6,-8,-9,-13,-14,-15,-18,-22)],y = census_final_2015_2019_below_proverty[,8])
+census_final_2015_2019_below_proverty_best_subset  <- 
+  regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-5,-6,-8,-9,-12,-13,-18)],y = census_final_2015_2019_below_proverty[,8])
 census_final_2015_2019_below_proverty_summary_best_subset <- summary(census_final_2015_2019_below_proverty_best_subset)
 as.data.frame(census_final_2015_2019_below_proverty_summary_best_subset$outmat)
-before_transform_number_of_predictors <- which.max(census_final_2015_2019_below_proverty_summary_best_subset$adjr2)
+census_final_2015_2019_below_proverty_summary_all_adjr2 <- census_final_2015_2019_below_proverty_summary_best_subset$adjr2
+before_transform_number_of_predictors <- which.max(census_final_2015_2019_below_proverty_summary_all_adjr2)
 census_final_2015_2019_below_proverty_summary_best_subset$which[before_transform_number_of_predictors,]
 
 #Model Performance at Different Sizes
@@ -666,8 +673,8 @@ step(census_final_2015_2019_below_proverty.naive.lm,direction='backward')
 #best predictors are based the output from leaps package
 census_final_2015_2019_below_proverty.lm.best <- lm(formula = proppov ~ 
                                                  familysize + propcov + 
-                                                 medhhinc + propmortgage + 
-                                                 addedbenefits + propwrkfromhome, 
+                                                 propmortgage + proputilelectric +
+                                                 propwrkfromhome, 
                                                data = census_final_2015_2019_below_proverty)
 summary(census_final_2015_2019_below_proverty.lm.best)
 
@@ -683,11 +690,9 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #We feel below are the ten numeric ACS variables which we think may be explanatory variables for tract-level poverty rates
 
 
-#medhhinc              (Median household income)
 #propcov               (Health insurance coverage)
 #familysize            (People in families)
 #foodstamp             (Food Stamp/SNAP benefits)
-#addedbenefits         (INCOME AND BENEFITS)
 #propmortgage          (Housing units with a mortgage)
 #proppayrent           (Occupied units paying rent)
 #propinternet          (Total households!!With a broadband Internet subscription)
@@ -696,16 +701,16 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #proputilgas           (Occupied housing units!!Utility gas)
 #proputilelectric      (Occupied housing units!!Electricity)
 
-#As per Kolmogorov-Smirnov Test, the p-value is greater than .05, we accept the NULL hypothesis and 
-#have sufficient evidence to say that the sample data does come from a normal distribution
+#As per Kolmogorov-Smirnov Test, the corresponding p-value is 0.3294 and is greater than .05, 
+#we accept the NULL hypothesis and have sufficient evidence to say that the sample data does come from a normal distribution
 
 #As per Breusch-Pagan Test, the residuals become much more spread out as the fitted values get larger. 
-#This “cone” shape is a telltale sign of heteroscedasticity. The corresponding p-value is 0.0042. 
+#This “cone” shape is a telltale sign of heteroscedasticity. The corresponding p-value is 0.0093. 
 #Since the p-value is less than 0.05, we reject the null hypothesis and have sufficient evidence 
 #to say that heteroscedasticity is present in the regression model.
 
 #Then, we ran the model on Adjusted R^2 model selection algorithm and have identified model with Adj. R^2 
-#value of 0.6837 as the good model. This model considers the predictors such as 'Median household income', 
+#value of 0.6622 as the good model. This model considers the predictors such as 'Median household income', 
 #'Health insurance coverage','People in families','Income and Benefits','Housing units with a mortgage',
 #'Worked from home' as the key contributor in predicting tract-level household poverty rates
 
@@ -732,20 +737,6 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 
 census_final_2015_2019_below_proverty$logproppov <- log1p(census_final_2015_2019_below_proverty$proppov)
 census_final_2015_2019_below_proverty$logpropcov <- log1p(census_final_2015_2019_below_proverty$propcov)
-census_final_2015_2019_below_proverty$logmedhhinc <- log1p(census_final_2015_2019_below_proverty$medhhinc)
-census_final_2015_2019_below_proverty$logaddedbenefits <- log1p(census_final_2015_2019_below_proverty$addedbenefits)
-
-# 10.a.1 Make upfront modeling choices
-census_final_2015_2019_below_proverty_after_transform.naive.lm.log <- lm(formula = logproppov ~ 
-                                                     familysize + logpropcov + 
-                                                     logmedhhinc + propmortgage + 
-                                                     logaddedbenefits + propwrkfromhome, 
-                                                   data = census_final_2015_2019_below_proverty)
-summary(census_final_2015_2019_below_proverty_after_transform.naive.lm.log)
-
-# 10.a.2 Test IID assumptions
-hist(census_final_2015_2019_below_proverty_after_transform.naive.lm.log$residuals)
-ks.test(census_final_2015_2019_below_proverty_after_transform.naive.lm.log$residuals/summary(census_final_2015_2019_below_proverty_after_transform.naive.lm.log)$sigma, pnorm)
-
-plot(census_final_2015_2019_below_proverty_after_transform.naive.lm.log$fitted.values,census_final_2015_2019_below_proverty_after_transform.naive.lm.log$residuals)
-bptest(census_final_2015_2019_below_proverty_after_transform.naive.lm.log)
+census_final_2015_2019_below_proverty$logpropmortgage <- log1p(census_final_2015_2019_below_proverty$propmortgage)
+census_final_2015_2019_below_proverty$logproputilelectric <- log1p(census_final_2015_2019_below_proverty$proputilelectric)
+census_final_2015_2019_below_proverty$logpropwrkfromhome <- log1p(census_final_2015_2019_below_proverty$propwrkfromhome)
