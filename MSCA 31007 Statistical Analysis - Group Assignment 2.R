@@ -643,9 +643,11 @@ plot(census_final_2015_2019_below_proverty.naive.lm$fitted.values,census_final_2
 bptest(census_final_2015_2019_below_proverty.naive.lm)
 
 # 9.b.3 Identify best model based on Adj R^2
-census_final_2015_2019_below_proverty_reginfo <- regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-4,-6,-8,-9,-13,-14,-15,-18,-22)],y = census_final_2015_2019_below_proverty[,8])
-summary(census_final_2015_2019_below_proverty_reginfo)$outmat
-summary(census_final_2015_2019_below_proverty_reginfo)$adjr2
+census_final_2015_2019_below_proverty_best_subset  <- regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-4,-6,-8,-9,-13,-14,-15,-18,-22)],y = census_final_2015_2019_below_proverty[,8])
+census_final_2015_2019_below_proverty_summary_best_subset <- summary(census_final_2015_2019_below_proverty_best_subset)
+as.data.frame(census_final_2015_2019_below_proverty_summary_best_subset$outmat)
+before_transform_number_of_predictors <- which.max(census_final_2015_2019_below_proverty_summary_best_subset$adjr2)
+census_final_2015_2019_below_proverty_summary_best_subset$which[before_transform_number_of_predictors,]
 
 # 9.b.4 Identify best model based on forward selection
 step(lm(proppov~1, census_final_2015_2019_below_proverty),scope=formula(census_final_2015_2019_below_proverty.naive.lm),direction='forward')
@@ -653,10 +655,20 @@ step(lm(proppov~1, census_final_2015_2019_below_proverty),scope=formula(census_f
 # 9.b.4 Identify best model based on backward elimination
 step(census_final_2015_2019_below_proverty.naive.lm,direction='backward')
 
+#best predictors are based the output from leaps package
+census_final_2015_2019_below_proverty.lm.best <- lm(formula = proppov ~ 
+                                                 familysize + propcov + 
+                                                 medhhinc + propmortgage + 
+                                                 addedbenefits + propwrkfromhome, 
+                                               data = census_final_2015_2019_below_proverty)
+summary(census_final_2015_2019_below_proverty.lm.best)
+
+#Diagnostic plots with multiple predictors
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(census_final_2015_2019_below_proverty.lm.best)
 
 # 9.c Save the RMSE (root mean square error, or ‘sigma’) for later.
-RMSE_census_final_2015_2019_below_proverty <- summary(lm(formula = proppov ~ familysize + propcov+ medhhinc + propmortgage + 
-                                                           addedbenefits + propwrkfromhome, data = census_final_2015_2019_below_proverty))$sigma
+RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_below_proverty.lm.best)$sigma
 
 
 #---------------------------------------------------Q9::BEGIN SUMMARY--------------------------------------------------------#
@@ -701,3 +713,31 @@ RMSE_census_final_2015_2019_below_proverty <- summary(lm(formula = proppov ~ fam
 #include logs or roots or powers of variables, but also functions of two different variables, or
 #step functions derived from continuous predictors.
 # ---
+
+#By running the best model 'census_final_2015_2019_below_proverty.lm' summary, we notice 
+#how the residual standard error is high: 3.78. Also the best model only explains 68% variability in the data.
+#This may imply that we need to transform our dataset further or try different methods of transformation.
+
+#Maybe a log-transformation in the values might help us to improve the model. Here we will do logs transformation
+#for response variable 'POVERTY LEVEL' and the predictor variables 'Median household income', 'Health insurance coverage',
+#'INCOME AND BENEFITS' which has more explanatory power than other predictor variables in predicting thetract-level household poverty rates
+
+census_final_2015_2019_below_proverty$logproppov <- log1p(census_final_2015_2019_below_proverty$proppov)
+census_final_2015_2019_below_proverty$logpropcov <- log1p(census_final_2015_2019_below_proverty$propcov)
+census_final_2015_2019_below_proverty$logmedhhinc <- log1p(census_final_2015_2019_below_proverty$medhhinc)
+census_final_2015_2019_below_proverty$logaddedbenefits <- log1p(census_final_2015_2019_below_proverty$addedbenefits)
+
+# 10.a.1 Make upfront modeling choices
+census_final_2015_2019_below_proverty.naive.lm.log <- lm(formula = logproppov ~ 
+                                                     familysize + logpropcov + 
+                                                     logmedhhinc + propmortgage + 
+                                                     logaddedbenefits + propwrkfromhome, 
+                                                   data = census_final_2015_2019_below_proverty)
+summary(census_final_2015_2019_below_proverty.naive.lm.log)
+
+# 10.a.2 Test IID assumptions
+hist(census_final_2015_2019_below_proverty.naive.lm.log$residuals)
+ks.test(census_final_2015_2019_below_proverty.naive.lm.log$residuals/summary(census_final_2015_2019_below_proverty.naive.lm.log)$sigma, pnorm)
+
+plot(census_final_2015_2019_below_proverty.naive.lm.log$fitted.values,census_final_2015_2019_below_proverty.naive.lm.log$residuals)
+bptest(census_final_2015_2019_below_proverty.naive.lm.log)
