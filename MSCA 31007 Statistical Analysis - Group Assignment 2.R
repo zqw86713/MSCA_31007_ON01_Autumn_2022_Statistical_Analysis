@@ -160,7 +160,7 @@ plot(census_final_2015_2019.lm.all)
 #(both models use medhhinc) leads to a significant improvement over using just single predictor variable 'medhhinc'
 
 #ANOVA uses the following null and alternative hypotheses:
-  
+
 #H0: Single predictor is enough to predict the baccalaureate attainment rate (propbac)
 #HA: Single predictor is not enough to predict the baccalaureate attainment rate (propbac)
 
@@ -191,32 +191,32 @@ census_final_2015_2019.lm.all.residuals <- data.frame(residuals = census_final_2
 census_final_2015_2019.lm.all.residuals$model <- 'All'
 
 ggplot() +
-    stat_ecdf(data = census_final_2015_2019.lm.residuals, col="red", aes(x = residuals, linetype = model), size = 1.2) +
-    stat_ecdf(data = census_final_2015_2019.lm.all.residuals, col="blue", aes(x = residuals, linetype = model), size = 1.2) +
-    scale_x_continuous(expand = c(0,0)) +
-    scale_y_continuous(expand = c(0,0)) +
-    scale_linetype_manual(values=c("solid", "dotted")) +
-    scale_color_manual(values = c("Single" = "red", "All" = "blue"),
-                       name="Model",
-                       breaks=c("Single", "All"),
-                       labels=c("Single Predictor", "All Predictors")) +
-    scale_size_manual(values=c(1, 1.5))+
-    labs(x='Residuals Distribution', 
-         y='Cumulative Probability Distribution',
-         title="Empirical Densities of the Residuals (Single versus Multiple Predictor Model)",
-         caption = "Data: 2015-2019 5-year ACS, US Census Bureau, Cook County, IL",
-         subtitle = sprintf("Adjusted R-squared (Single): %s, Actual Adjusted R-squared (Multiple): %s", 
-                            round(census_final_2015_2019.lm.summary$adj.r.squared, 4), 
-                            round(census_final_2015_2019.lm.all.summary$adj.r.squared, 4))) +
-    theme(plot.title = element_text(hjust=0.5, size=20, face='bold'), 
-          panel.border = element_blank(), panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
-          panel.background = element_rect(fill = "white", color = NA),
-          legend.position = c(0.9, 0.5),
-          legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid", colour ="darkblue"))
-    theme_minimal()
+  stat_ecdf(data = census_final_2015_2019.lm.residuals, col="red", aes(x = residuals, linetype = model), size = 1.2) +
+  stat_ecdf(data = census_final_2015_2019.lm.all.residuals, col="blue", aes(x = residuals, linetype = model), size = 1.2) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_linetype_manual(values=c("solid", "dotted")) +
+  scale_color_manual(values = c("Single" = "red", "All" = "blue"),
+                     name="Model",
+                     breaks=c("Single", "All"),
+                     labels=c("Single Predictor", "All Predictors")) +
+  scale_size_manual(values=c(1, 1.5))+
+  labs(x='Residuals Distribution', 
+       y='Cumulative Probability Distribution',
+       title="Empirical Densities of the Residuals (Single versus Multiple Predictor Model)",
+       caption = "Data: 2015-2019 5-year ACS, US Census Bureau, Cook County, IL",
+       subtitle = sprintf("Adjusted R-squared (Single): %s, Actual Adjusted R-squared (Multiple): %s", 
+                          round(census_final_2015_2019.lm.summary$adj.r.squared, 4), 
+                          round(census_final_2015_2019.lm.all.summary$adj.r.squared, 4))) +
+  theme(plot.title = element_text(hjust=0.5, size=20, face='bold'), 
+        panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        panel.background = element_rect(fill = "white", color = NA),
+        legend.position = c(0.9, 0.5),
+        legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid", colour ="darkblue"))
+theme_minimal()
 
-    
+
 # ---
 # Perform Step 3
 # In one to two paragraphs, summarize the difference in performance between the two models and make a recommendation 
@@ -475,9 +475,9 @@ st_geometry(census_tract_814_03_new) <- NULL
 #A confidence interval captures the uncertainty around the mean predicted values. 
 #Thus, a prediction interval will always be wider than a confidence interval for the same value.
 census_tract_814_03_prediction_result <- predict(census_final_2015_2019.lm.all, 
-        newdata = census_tract_814_03_new,
-        interval = c("confidence"),
-        level = 0.90)
+                                                 newdata = census_tract_814_03_new,
+                                                 interval = c("confidence"),
+                                                 level = 0.90)
 
 sprintf("The point estimate for the predicted college degree attainment in this tract is %s", 
         round(census_tract_814_03_prediction_result[,1], digits = 4))
@@ -500,9 +500,9 @@ census_final_2015_2019.lm.all.weighted.summary
 
 
 census_tract_814_03_prediction_result_weighted <- predict(census_final_2015_2019.lm.all.weighted, 
-                                                 newdata = census_tract_814_03_new,
-                                                 interval = c("confidence"),
-                                                 level = 0.90)
+                                                          newdata = census_tract_814_03_new,
+                                                          interval = c("confidence"),
+                                                          level = 0.90)
 
 sprintf("The point estimate for the predicted college degree attainment after weighting by population for this tract 
  is %s and marginally lower than the previous value of %s", 
@@ -563,6 +563,7 @@ summary(medageR2)
 cor(census_final_2015_2019$medhhinc, census_final_2015_2019$propcov, method="pearson")
 cor(census_final_2015_2019$propcov, census_final_2015_2019$proppov, method="pearson")
 cor(census_final_2015_2019$medhhinc, census_final_2015_2019$proppov, method="pearson")
+
 
 # ---
 # Perform Step 9
@@ -629,14 +630,14 @@ census_final_2015_2019_below_proverty <- census_wide_2015_2019_below_proverty %>
 
 # Drop the columns which report margin of error plus others
 census_final_2015_2019_below_proverty_drop_columns <- c("DP02_0065PM", "DP03_0062M", "DP05_0001M", 
-                                              "DP05_0018M", "DP03_0096PM", "DP03_0128PM",
-                                              "DP04_0047PM", "DP03_0136PM", "DP03_0074PM",
-                                              "DP03_0075PM", "DP04_0045PM", "DP04_0063PM",
-                                              "DP04_0065PM", "DP04_0093PM", "DP04_0126PM",
-                                              "DP04_0057PM", "DP02_0153PM", "DP03_0024PM", 
-                                              "DP03_0021PM")
+                                                        "DP05_0018M", "DP03_0096PM", "DP03_0128PM",
+                                                        "DP04_0047PM", "DP03_0136PM", "DP03_0074PM",
+                                                        "DP03_0075PM", "DP04_0045PM", "DP04_0063PM",
+                                                        "DP04_0065PM", "DP04_0093PM", "DP04_0126PM",
+                                                        "DP04_0057PM", "DP02_0153PM", "DP03_0024PM", 
+                                                        "DP03_0021PM")
 census_final_2015_2019_below_proverty <- census_final_2015_2019_below_proverty[,!(names(census_final_2015_2019_below_proverty) 
-                                                                                %in% census_final_2015_2019_below_proverty_drop_columns)]
+                                                                                  %in% census_final_2015_2019_below_proverty_drop_columns)]
 
 
 #Ten numeric ACS variables which we think may be explanatory variables for tract-level poverty rates
@@ -660,9 +661,9 @@ st_geometry(census_final_2015_2019_below_proverty) <- NULL
 # 9.b.1 Make upfront modeling choices
 head(census_final_2015_2019_below_proverty)
 census_final_2015_2019_below_proverty.naive.lm <- lm(proppov~propcov+familysize+foodstamp+
-                                                     propmortgage+proppayrent+
-                                                     propinternet+propwrkfromhome+
-                                                     proppublictranstowrk+proputilelectric+proputilgas, census_final_2015_2019_below_proverty)
+                                                       propmortgage+proppayrent+
+                                                       propinternet+propwrkfromhome+
+                                                       proppublictranstowrk+proputilelectric+proputilgas, census_final_2015_2019_below_proverty)
 summary(census_final_2015_2019_below_proverty.naive.lm)
 
 # 9.b.2 Test IID assumptions
@@ -697,11 +698,26 @@ step(census_final_2015_2019_below_proverty.naive.lm,direction='backward')
 
 #best predictors are based the output from leaps package
 census_final_2015_2019_below_proverty.lm.best <- lm(formula = proppov ~ 
-                                                 familysize + propcov + 
-                                                 propmortgage + proputilelectric +
-                                                 propwrkfromhome, 
-                                               data = census_final_2015_2019_below_proverty)
+                                                      familysize + propcov + 
+                                                      propmortgage + proputilelectric +
+                                                      propwrkfromhome, 
+                                                    data = census_final_2015_2019_below_proverty)
 summary(census_final_2015_2019_below_proverty.lm.best)
+
+# 9.b.5 Plot fitted versus residual
+plot(fitted(census_final_2015_2019_below_proverty.lm.best), resid(census_final_2015_2019_below_proverty.lm.best), col = "dodgerblue",
+     pch = 20, cex = 1.5, xlab = "Fitted", ylab = "Residuals")
+abline(h = 0, lty = 2, col = "darkorange", lwd = 2)
+
+#Looking at a fitted versus residuals plot verifies that there likely are not any issues with the assumptions of this model, 
+#which Breusch-Pagan and Kolmogorov-Smirnov tests verify.
+
+# 9.b.6 Test IID assumptions
+hist(census_final_2015_2019_below_proverty.lm.best$residuals)
+ks.test(census_final_2015_2019_below_proverty.lm.best$residuals/summary(census_final_2015_2019_below_proverty.lm.best)$sigma, pnorm)
+
+plot(census_final_2015_2019_below_proverty.lm.best$fitted.values,census_final_2015_2019_below_proverty.lm.best$residuals)
+bptest(census_final_2015_2019_below_proverty.lm.best)
 
 #Diagnostic plots with multiple predictors
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
@@ -726,17 +742,17 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #proputilgas           (Occupied housing units!!Utility gas)
 #proputilelectric      (Occupied housing units!!Electricity)
 
-#As per Kolmogorov-Smirnov Test, the corresponding p-value is 0.3294 and is greater than .05, 
+#As per Kolmogorov-Smirnov Test, the corresponding p-value is 0.2578 and is greater than .05, 
 #we accept the NULL hypothesis and have sufficient evidence to say that the sample data does come from a normal distribution
 
 #As per Breusch-Pagan Test, the residuals become much more spread out as the fitted values get larger. 
-#This “cone” shape is a telltale sign of heteroscedasticity. The corresponding p-value is 0.0093. 
+#This “cone” shape is a telltale sign of heteroscedasticity. The corresponding p-value is 0.0121. 
 #Since the p-value is less than 0.05, we reject the null hypothesis and have sufficient evidence 
 #to say that heteroscedasticity is present in the regression model.
 
 #Then, we ran the model on Adjusted R^2 model selection algorithm and have identified model with Adj. R^2 
-#value of 0.6622 as the good model. This model considers the predictors such as 'Median household income', 
-#'Health insurance coverage','People in families','Income and Benefits','Housing units with a mortgage',
+#value of 0.6622 as the good model. This model considers the predictors such as 'Health insurance coverage',
+#'People in families','Utility Electricity','Housing units with a mortgage',
 #'Worked from home' as the key contributor in predicting tract-level household poverty rates
 
 
@@ -755,13 +771,3 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #By running the best model 'census_final_2015_2019_below_proverty.lm' summary, we notice 
 #how the residual standard error is high: 3.78. Also the best model only explains 68% variability in the data.
 #This may imply that we need to transform our dataset further or try different methods of transformation.
-
-#Maybe a log-transformation in the values might help us to improve the model. Here we will do logs transformation
-#for response variable 'POVERTY LEVEL' and the predictor variables 'Median household income', 'Health insurance coverage',
-#'INCOME AND BENEFITS' which has more explanatory power than other predictor variables in predicting thetract-level household poverty rates
-
-census_final_2015_2019_below_proverty$logproppov <- log1p(census_final_2015_2019_below_proverty$proppov)
-census_final_2015_2019_below_proverty$logpropcov <- log1p(census_final_2015_2019_below_proverty$propcov)
-census_final_2015_2019_below_proverty$logpropmortgage <- log1p(census_final_2015_2019_below_proverty$propmortgage)
-census_final_2015_2019_below_proverty$logproputilelectric <- log1p(census_final_2015_2019_below_proverty$proputilelectric)
-census_final_2015_2019_below_proverty$logpropwrkfromhome <- log1p(census_final_2015_2019_below_proverty$propwrkfromhome)
