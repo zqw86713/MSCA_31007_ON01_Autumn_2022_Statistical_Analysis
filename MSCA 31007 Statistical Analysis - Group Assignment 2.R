@@ -535,9 +535,34 @@ sprintf("90 percentage confidence interval for the predicted college degree atta
 #relevant.
 # ---
 
+#Liner model with all predictors
+census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019)
+census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
+census_final_2015_2019.lm.all.summary
 
-#TODO
+#R^2 for each predictor variable
+medhhincR2<-lm(propbac ~ medhhinc, data = census_final_2015_2019)
+summary(medhhincR2)
 
+propcovR2<-lm(propbac ~ propcov, data = census_final_2015_2019)
+summary(propcovR2)
+
+proppovR2<-lm(propbac ~ proppov, data = census_final_2015_2019)
+summary(proppovR2)
+
+proprentR2<-lm(propbac ~ proprent, data = census_final_2015_2019)
+summary(proprentR2)
+
+totpopR2<-lm(propbac ~ totpop, data = census_final_2015_2019)
+summary(totpopR2)
+
+medageR2<-lm(propbac ~ medage, data = census_final_2015_2019)
+summary(medageR2)
+
+#Finding which of the impactful predictors are correlated to each other
+cor(census_final_2015_2019$medhhinc, census_final_2015_2019$propcov, method="pearson")
+cor(census_final_2015_2019$propcov, census_final_2015_2019$proppov, method="pearson")
+cor(census_final_2015_2019$medhhinc, census_final_2015_2019$proppov, method="pearson")
 
 # ---
 # Perform Step 9
