@@ -649,6 +649,14 @@ as.data.frame(census_final_2015_2019_below_proverty_summary_best_subset$outmat)
 before_transform_number_of_predictors <- which.max(census_final_2015_2019_below_proverty_summary_best_subset$adjr2)
 census_final_2015_2019_below_proverty_summary_best_subset$which[before_transform_number_of_predictors,]
 
+#Model Performance at Different Sizes
+matplot(1:8,cbind(summary(census_final_2015_2019_below_proverty_best_subset)$rsq,summary(census_final_2015_2019_below_proverty_best_subset)$adjr2),type='l',
+        main='Model Performance at Different Sizes',
+        sub='Using Best Model At Each Size',
+        xlab='# Predictors',ylab='')
+legend(x='bottomright',legend=c('R-Squared','Adj R^2'),
+       col=c(1,2),lty=c(1,2))
+
 # 9.b.4 Identify best model based on forward selection
 step(lm(proppov~1, census_final_2015_2019_below_proverty),scope=formula(census_final_2015_2019_below_proverty.naive.lm),direction='forward')
 
@@ -728,16 +736,16 @@ census_final_2015_2019_below_proverty$logmedhhinc <- log1p(census_final_2015_201
 census_final_2015_2019_below_proverty$logaddedbenefits <- log1p(census_final_2015_2019_below_proverty$addedbenefits)
 
 # 10.a.1 Make upfront modeling choices
-census_final_2015_2019_below_proverty.naive.lm.log <- lm(formula = logproppov ~ 
+census_final_2015_2019_below_proverty_after_transform.naive.lm.log <- lm(formula = logproppov ~ 
                                                      familysize + logpropcov + 
                                                      logmedhhinc + propmortgage + 
                                                      logaddedbenefits + propwrkfromhome, 
                                                    data = census_final_2015_2019_below_proverty)
-summary(census_final_2015_2019_below_proverty.naive.lm.log)
+summary(census_final_2015_2019_below_proverty_after_transform.naive.lm.log)
 
 # 10.a.2 Test IID assumptions
-hist(census_final_2015_2019_below_proverty.naive.lm.log$residuals)
-ks.test(census_final_2015_2019_below_proverty.naive.lm.log$residuals/summary(census_final_2015_2019_below_proverty.naive.lm.log)$sigma, pnorm)
+hist(census_final_2015_2019_below_proverty_after_transform.naive.lm.log$residuals)
+ks.test(census_final_2015_2019_below_proverty_after_transform.naive.lm.log$residuals/summary(census_final_2015_2019_below_proverty_after_transform.naive.lm.log)$sigma, pnorm)
 
-plot(census_final_2015_2019_below_proverty.naive.lm.log$fitted.values,census_final_2015_2019_below_proverty.naive.lm.log$residuals)
-bptest(census_final_2015_2019_below_proverty.naive.lm.log)
+plot(census_final_2015_2019_below_proverty_after_transform.naive.lm.log$fitted.values,census_final_2015_2019_below_proverty_after_transform.naive.lm.log$residuals)
+bptest(census_final_2015_2019_below_proverty_after_transform.naive.lm.log)
