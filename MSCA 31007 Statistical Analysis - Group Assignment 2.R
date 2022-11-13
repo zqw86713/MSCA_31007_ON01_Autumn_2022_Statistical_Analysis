@@ -667,9 +667,12 @@ census_final_2015_2019_below_proverty.naive.lm <- lm(proppov~propcov+familysize+
 summary(census_final_2015_2019_below_proverty.naive.lm)
 
 # 9.b.2 Test IID assumptions
+
+#Kolmogorov-Smirnov test for normality
 hist(census_final_2015_2019_below_proverty.naive.lm$residuals)
 ks.test(census_final_2015_2019_below_proverty.naive.lm$residuals/summary(census_final_2015_2019_below_proverty.naive.lm)$sigma, pnorm)
 
+#Breusch-Pagan test for normality heteroscedasticity
 plot(census_final_2015_2019_below_proverty.naive.lm$fitted.values,census_final_2015_2019_below_proverty.naive.lm$residuals)
 bptest(census_final_2015_2019_below_proverty.naive.lm)
 
@@ -708,13 +711,14 @@ plot(fitted(census_final_2015_2019_below_proverty.lm.best), resid(census_final_2
      pch = 20, cex = 1.5, xlab = "Fitted", ylab = "Residuals")
 abline(h = 0, lty = 2, col = "darkorange", lwd = 2)
 
-#Looking at a fitted versus residuals plot verifies that there likely are not any issues with the assumptions of this model, 
-#which Breusch-Pagan and Kolmogorov-Smirnov tests verify.
 
 # 9.b.6 Test IID assumptions
+
+#Kolmogorov-Smirnov test for normality
 hist(census_final_2015_2019_below_proverty.lm.best$residuals)
 ks.test(census_final_2015_2019_below_proverty.lm.best$residuals/summary(census_final_2015_2019_below_proverty.lm.best)$sigma, pnorm)
 
+#Breusch-Pagan test for normality heteroscedasticity
 plot(census_final_2015_2019_below_proverty.lm.best$fitted.values,census_final_2015_2019_below_proverty.lm.best$residuals)
 bptest(census_final_2015_2019_below_proverty.lm.best)
 
@@ -768,7 +772,7 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 # ---
 
 #By running the best model 'census_final_2015_2019_below_proverty.lm.best' summary, we notice 
-#how the residual standard error is high: 3.906. Also the best model only explains 68% variability in the data.
+#how the residual standard error is high: 3.757. Also the best model only explains 68% variability in the data.
 #This may imply that we need to transform our dataset further or try different methods of transformation.
 
 
@@ -779,21 +783,26 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #'Food Stamp/SNAP benefits', 'People in families', 'Worked from home'
 #which has more explanatory power than other predictor variables in predicting the tract-level household poverty rates
 
+invBoxCox <- function(x, lambda)
+  if (lambda == 0) exp(x) else (lambda*x + 1)^(1/lambda)
 
-boxcox(census_final_2015_2019_below_proverty.lm.best, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
+boxcox <- boxcox(census_final_2015_2019_below_proverty.lm.best, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
 
-#Using the Box-Cox method, we see that λ=0.2 is both in the confidence interval, and is extremely close to the maximum, 
+#find optimal lambda for Box-Cox transformation 
+optimal_lambda_boxcox <- boxcox$x[which.max(boxcox$y)]
+
+#Using the Box-Cox method, we see that λ=-0.25 is both in the confidence interval, and is extremely close to the maximum, 
 #which suggests a transformation of the form
 
 ##(y^λ − 1)/λ = (y^0.2 − 1)/0.2
 
-#Box-Cox transformations
-census_final_2015_2019_below_proverty$boxcoxproppov <- (((census_final_2015_2019_below_proverty$proppov ^ 0.2) - 1) / 0.2)
+#Box-Cox transformations of response variable
+census_final_2015_2019_below_proverty$boxcoxproppov <- ((census_final_2015_2019_below_proverty$proppov^optimal_lambda_boxcox - 1) / optimal_lambda_boxcox)
 
-#Functions of two different variables transformations
+#Functions of two different variables transformations of predictor variables
 census_final_2015_2019_below_proverty$proputiltot <- census_final_2015_2019_below_proverty$proputilelectric+census_final_2015_2019_below_proverty$proputilgas
 
-#Polynomial transformations
+#Polynomial transformations of predictor variables
 #add the second order term we need to use the I() function in the model specification
 census_final_2015_2019_below_proverty$polymedage <- I(census_final_2015_2019_below_proverty$medage ^ 2) + 
   I(census_final_2015_2019_below_proverty$medage ^ 3) + 
@@ -805,8 +814,6 @@ census_final_2015_2019_below_proverty$polypropcov <- I(census_final_2015_2019_be
 census_final_2015_2019_below_proverty$polypropwrkfromhome <- I(census_final_2015_2019_below_proverty$propwrkfromhome ^ 2)
 census_final_2015_2019_below_proverty$polyproputiltot <- I(census_final_2015_2019_below_proverty$proputiltot ^ 2)
 
-#Log transformations
-census_final_2015_2019_below_proverty$logpropmortgage <- log1p(census_final_2015_2019_below_proverty$propmortgage)
 
 # 10.b.1 Make upfront modeling choices
 census_final_2015_2019_below_proverty_after_transform.naive.lm <- lm(formula = boxcoxproppov ~ 
@@ -836,9 +843,12 @@ plot(census_final_2015_2019_below_proverty_after_transform.naive.lm)
 
 
 # 10.b.2 Test IID assumptions
+
+#Kolmogorov-Smirnov test for normality
 hist(census_final_2015_2019_below_proverty_after_transform.naive.lm$residuals)
 ks.test(census_final_2015_2019_below_proverty_after_transform.naive.lm$residuals/summary(census_final_2015_2019_below_proverty_after_transform.naive.lm)$sigma, pnorm)
 
+#Breusch-Pagan test for normality heteroscedasticity
 plot(census_final_2015_2019_below_proverty_after_transform.naive.lm$fitted.values,census_final_2015_2019_below_proverty_after_transform.naive.lm$residuals)
 bptest(census_final_2015_2019_below_proverty_after_transform.naive.lm)
 
@@ -873,15 +883,72 @@ bptest(census_final_2015_2019_below_proverty_after_transform.lm.best)
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
 plot(census_final_2015_2019_below_proverty_after_transform.lm.best)
 
-# 10.b.6 Save the RMSE (root mean square error, or ‘sigma’) for later.
-RMSE_census_final_2015_2019_below_proverty_after_transform <- summary(census_final_2015_2019_below_proverty_after_transform.lm.best)$sigma
+# 10.b.6 ‘un-transform’ your predictions, manually compute RMSE, and compare that to your first model.
+census_final_2015_2019_below_proverty_after_transform_predicted_y <- predict(census_final_2015_2019_below_proverty_after_transform.lm.best, 
+                                newdata= census_final_2015_2019_below_proverty)
+
+census_final_2015_2019_below_proverty_after_transform_predicted_y_untransform <- invBoxCox(census_final_2015_2019_below_proverty_after_transform_predicted_y, optimal_lambda_boxcox)
+census_final_2015_2019_below_proverty_after_transform_predicted_y_residuals <- census_final_2015_2019_below_proverty$proppov - census_final_2015_2019_below_proverty_after_transform_predicted_y_untransform
+RMSE_census_final_2015_2019_below_proverty_after_transform <- sqrt(mean(census_final_2015_2019_below_proverty_after_transform_predicted_y_residuals^2))
+
 
 #---------------------------------------------------Q10::BEGIN SUMMARY--------------------------------------------------------#
 
-#Before applying transformation on both response variable and predictor variables, we see residual error decreased to 3.906
-#and the model explains 69% variability in the data
+#First, we have to assess the base line model with un-transformed response variable and selected predictors. 
+#Here the response variable is 'Provert Level' and selected predictors are 'People in families', 'Median age', 
+#'Health insurance coverage', 'Food Stamp/SNAP benefits', 'Electricity', 'Worked from home', 'Public transportation to work'.
+#Then we used AIC backward model selection algorithm to choose the good model. The model explains 68.75% variability in the data
+#and has residual error of 3.906
 
-#After apply transformation on both response variable and predictor variables, we see residual error decreased to 0.1241
-#and the new model explains 80% variability in the data
+#Then we have evaluated the IID assumptions:
+
+#As per Kolmogorov-Smirnov test, the corresponding p-value is 0.5789 and is greater than .05, we accept the NULL 
+#hypothesis and have sufficient evidence to say that the sample data does come from a normal distribution and residuals 
+#are somewhat normally distributed
+
+#As per Breusch-Pagan Test, the residuals become much more spread out as the fitted values get larger. 
+#This “cone” shape is a telltale sign of heteroscedasticity. The corresponding p-value is 0.005369. 
+#Since the p-value is less than 0.05, we reject the null hypothesis and have sufficient evidence 
+#to say that severe heteroscedasticity is present in the regression model.
+
+#Then we took the RMSE (root mean square error, or ‘sigma’) of the base line model and it's 3.7572
+
+
+#To alleviate these issues we perform transformation to the predictors and response variable from the same dataset. 
+#We did the following steps of transformation to base line model to improve the IID assumptions, 
+#model explainability by increasing adjusted R^2 and reduce RMSE (root mean square error).
+
+#1) Applied Box-Cox transformation on response variable so that the data closely resembles a normal distribution.
+#   This assumption allows us to construct confidence intervals and conduct hypothesis tests
+#2) Applied Polynomial transformation on predictor variables. They are extremely useful as they allow for more flexible models, 
+#   but do not change the units of the variables like the way units changed when using logarithmic transformations.
+#   Polynomial Regression models are usually fit with the method of least squares.The least square method minimizes the 
+#   variance of the coefficients, under the Gauss Markov Theorem. Polynomial Regression does not require the relationship 
+#   between the independent and dependent variables to be linear in the data set. The relationship between the dependent 
+#   variable and any independent variable is linear or curvilinear (specifically polynomial)
+#3) functions of two different variables
+
+
+#After apply transformations, then we used AIC backward model selection algorithm to choose the good model. 
+#The model explains 80.23% variability in the data and has decreased the residual error to 0.02088
+
+#Then we have evaluated the IID assumptions:
+
+#As per Kolmogorov-Smirnov test, the corresponding p-value is 0.7916 and is greater than .05, we accept the NULL 
+#hypothesis and have sufficient evidence to say that the sample data does come from a normal distribution and residuals 
+#are much more normally distributed than the base line model which had p-value of 0.5789
+
+#As per Breusch-Pagan Test, the residuals are much less spread out as the fitted values get larger. 
+#The presence of heteroscedasticity drastically got reduced and the corresponding p-value is 0.253 which is much lower 
+#compared to base line model p-value of 0.005369. 
+#Since the p-value is greater than 0.05, we accept the null hypothesis and have sufficient evidence 
+#to say that heteroscedasticity is minimized in the regression model.
+
+
+#Then we 'un-transformed' the Box-Cox transformed response variable before manually computing the 
+#RMSE of the improved model and the value turns to be 2.7599 which much lower than the starting model's
+#RMSE value 3.7572
+
 
 #---------------------------------------------------Q10::END SUMMARY--------------------------------------------------------#
+
