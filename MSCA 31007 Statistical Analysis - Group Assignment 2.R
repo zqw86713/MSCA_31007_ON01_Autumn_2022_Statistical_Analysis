@@ -342,7 +342,7 @@ attainment_rate_target <- predict(census_final_2015_2019.lm.all, newdata= list(m
 #Flag which tracts belong to Cook County, IL.
 # ---
 
-acs_var <- c('DP05_0001E','DP02_0065PE')
+acs_var <- c('DP05_0001E','DP02_0065PE','DP02_0058PE')
 us_states <- c("AK","AL","AR","AZ","CA","CO","CT","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY",
                "LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY",
                "OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY")
@@ -364,15 +364,15 @@ all_census_tidy_2015_2019 <- all_census_tidy_2015_2019 %>%
 
 
 # Remove the rows from dataframe that contains at least one NA
-all_census_tidy_2015_2019_test <- all_census_tidy_2015_2019[!(is.na(all_census_tidy_2015_2019$DP02_0065PE) | is.na(all_census_tidy_2015_2019$DP05_0001E)), ]
+all_census_tidy_2015_2019 <- all_census_tidy_2015_2019[!(is.na(all_census_tidy_2015_2019$DP02_0065PE) | is.na(all_census_tidy_2015_2019$DP05_0001E) | is.na(all_census_tidy_2015_2019$DP02_0058PE)), ]
 all_census_tidy_2015_2019 <- na.omit(all_census_tidy_2015_2019)
 
 #Rename the remaining columns
 all_census_2015_2019 <- all_census_tidy_2015_2019 %>%  
-  rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065PE', 'totpop' = 'DP05_0001E')
+  rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065PE', 'totpop' = 'DP05_0001E', 'graduateschool' = 'DP02_0058PE')
 
 #Drop the columns that are not required
-all_census_2015_2019 <- all_census_2015_2019[,!(names(all_census_2015_2019) %in% c("DP05_0001M", "DP02_0065PM"))]
+all_census_2015_2019 <- all_census_2015_2019[,!(names(all_census_2015_2019) %in% c("DP05_0001M", "DP02_0065PM", "DP02_0058PM"))]
 
 #Filter to population of at least 100
 all_census_final_2015_2019 <- filter(all_census_2015_2019, totpop >= 100)
