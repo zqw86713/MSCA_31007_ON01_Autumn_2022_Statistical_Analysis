@@ -647,6 +647,39 @@ census_final_2015_2019_below_proverty <- census_final_2015_2019_below_proverty[,
 #propinternet,propwrkfromhome,
 #proppublictranstowrk
 
+#list of available variables
+str(census_final_2015_2019_below_proverty)
+#linear regression with all numeric ACS variables except median income
+all.lm <- lm(proppov~.-medhhinc-geoid-name,census_final_2015_2019_below_proverty)
+summary(all.lm)
+#logically familysize determines foodstamp and addedbenefits (the bigger the family the more aid they receive)
+inter <- lm(proppov~.-medhhinc-geoid-housingtenure-name+(familysize*foodstamp)+(familysize*addedbenefits),census_final_2015_2019_below_proverty)
+summary(inter.lm)
+#remove predictor variables that are not statistically significant (large p-values) to reduce model to include only 10 variables (R^2=87% for both models)
+red1.lm <- lm(proppov~.-medhhinc-geoid-name-housingtenure-proppayrent-totpop-propwrkfromhome-propmortgage-propcov-proppublictranstowrk+(familysize*foodstamp)+(familysize*addedbenefits),census_final_2015_2019_below_proverty)
+summary(red1.lm)
+
+red2.lm <- lm(proppov~.-medhhinc-geoid-name-housingtenure-propvehicles-totpop-propwrkfromhome-propmortgage-propcov-proppublictranstowrk+(familysize*foodstamp)+(familysize*addedbenefits),census_final_2015_2019_below_proverty)
+summary(red2.lm)
+
+#Use the Kolmogorov-Smirnov test and the Breusch-Pagan test to examine the normality and the heteroskedasticity of the residuals
+#Reduced model passes the Kolmogorov-Smirnov test but not the Breusch-Pagan test
+hist(red1.lm$residuals)
+ks.test(red1.lm$residuals/summary(red1.lm)$sigma,pnorm)
+
+plot(red1.lm$fitted.values,red1.lm$residuals)
+bptest(red1.lm)
+
+#Reduced model 2 passes the Kolmogorov-Smirnov test and the Breusch-Pagan tests
+hist(red2.lm$residuals)
+ks.test(red2.lm$residuals/summary(red2.lm)$sigma,pnorm)
+
+plot(red2.lm$fitted.values,red2.lm$residuals)
+bptest(red2.lm)
+
+#So, reduced model 2 is identified as the best model to explain poverty rates using 10 numeric ACS variables
+best.lm <- lm(proppov~.-medhhinc-geoid-name-housingtenure-propvehicles-totpop-propwrkfromhome-propmortgage-propcov-proppublictranstowrk+(familysize*foodstamp)+(familysize*addedbenefits),census_final_2015_2019_below_proverty)
+summary(best.lm)
 
 # 9.a Check to make sure that all of your predictors are at least 90% non-missing.
 
