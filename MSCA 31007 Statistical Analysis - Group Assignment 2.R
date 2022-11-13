@@ -661,7 +661,7 @@ st_geometry(census_final_2015_2019_below_proverty) <- NULL
 # 9.b.1 Make upfront modeling choices
 head(census_final_2015_2019_below_proverty)
 census_final_2015_2019_below_proverty.naive.lm <- lm(proppov~propcov+familysize+foodstamp+
-                                                       propmortgage+proppayrent+
+                                                       propmortgage+proppayrent+medage+
                                                        propinternet+propwrkfromhome+
                                                        proppublictranstowrk+proputilelectric+proputilgas, census_final_2015_2019_below_proverty)
 summary(census_final_2015_2019_below_proverty.naive.lm)
@@ -675,7 +675,7 @@ bptest(census_final_2015_2019_below_proverty.naive.lm)
 
 # 9.b.3 Identify best model based on Adj R^2
 census_final_2015_2019_below_proverty_best_subset  <- 
-  regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-5,-6,-8,-9,-12,-13,-18)],y = census_final_2015_2019_below_proverty[,8])
+  regsubsets(x = census_final_2015_2019_below_proverty[,c(-1:-3,-5,-6,-8,-9,-12,-13,-18)],y = census_final_2015_2019_below_proverty[,8])
 census_final_2015_2019_below_proverty_summary_best_subset <- summary(census_final_2015_2019_below_proverty_best_subset)
 as.data.frame(census_final_2015_2019_below_proverty_summary_best_subset$outmat)
 census_final_2015_2019_below_proverty_summary_all_adjr2 <- census_final_2015_2019_below_proverty_summary_best_subset$adjr2
@@ -698,9 +698,8 @@ step(census_final_2015_2019_below_proverty.naive.lm,direction='backward')
 
 #best predictors are based the output from leaps package
 census_final_2015_2019_below_proverty.lm.best <- lm(formula = proppov ~ 
-                                                      familysize + propcov + 
-                                                      propmortgage + proputilelectric +
-                                                      propwrkfromhome, 
+                                                      familysize + propcov + medage + foodstamp +
+                                                      proputilelectric + propwrkfromhome + proppublictranstowrk, 
                                                     data = census_final_2015_2019_below_proverty)
 summary(census_final_2015_2019_below_proverty.lm.best)
 
@@ -751,8 +750,8 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #to say that heteroscedasticity is present in the regression model.
 
 #Then, we ran the model on Adjusted R^2 model selection algorithm and have identified model with Adj. R^2 
-#value of 0.6622 as the good model. This model considers the predictors such as 'Health insurance coverage',
-#'People in families','Utility Electricity','Housing units with a mortgage',
+#value of 0.6831 as the good model. This model considers the predictors such as 'Health insurance coverage',
+#'People in families','Utility Electricity','Median age',
 #'Worked from home' as the key contributor in predicting tract-level household poverty rates
 
 
@@ -768,6 +767,121 @@ RMSE_census_final_2015_2019_below_proverty <- summary(census_final_2015_2019_bel
 #step functions derived from continuous predictors.
 # ---
 
-#By running the best model 'census_final_2015_2019_below_proverty.lm' summary, we notice 
-#how the residual standard error is high: 3.78. Also the best model only explains 68% variability in the data.
+#By running the best model 'census_final_2015_2019_below_proverty.lm.best' summary, we notice 
+#how the residual standard error is high: 3.906. Also the best model only explains 68% variability in the data.
 #This may imply that we need to transform our dataset further or try different methods of transformation.
+
+
+# 10.a.1 Make upfront modeling choices
+
+#Maybe a transformations in the values might help us to improve the model. Here we will do different transformation
+#for response variable 'POVERTY LEVEL' and the predictor variables 'Health insurance coverage',
+#'Food Stamp/SNAP benefits', 'People in families', 'Worked from home'
+#which has more explanatory power than other predictor variables in predicting the tract-level household poverty rates
+
+
+boxcox(census_final_2015_2019_below_proverty.lm.best, lambda = seq(-0.25, 0.75, by = 0.05), plotit = TRUE)
+
+#Using the Box-Cox method, we see that λ=0.2 is both in the confidence interval, and is extremely close to the maximum, 
+#which suggests a transformation of the form
+
+##(y^λ − 1)/λ = (y^0.2 − 1)/0.2
+
+#Box-Cox transformations
+census_final_2015_2019_below_proverty$boxcoxproppov <- (((census_final_2015_2019_below_proverty$proppov ^ 0.2) - 1) / 0.2)
+
+#Functions of two different variables transformations
+census_final_2015_2019_below_proverty$proputiltot <- census_final_2015_2019_below_proverty$proputilelectric+census_final_2015_2019_below_proverty$proputilgas
+
+#Polynomial transformations
+#add the second order term we need to use the I() function in the model specification
+census_final_2015_2019_below_proverty$polymedage <- I(census_final_2015_2019_below_proverty$medage ^ 2) + 
+  I(census_final_2015_2019_below_proverty$medage ^ 3) + 
+  I(census_final_2015_2019_below_proverty$medage ^ 4)
+census_final_2015_2019_below_proverty$polyfoodstamp <- I(census_final_2015_2019_below_proverty$foodstamp ^ 2)
+census_final_2015_2019_below_proverty$polypropcov <- I(census_final_2015_2019_below_proverty$propcov ^ 2) + 
+  I(census_final_2015_2019_below_proverty$propcov ^ 3) + 
+  I(census_final_2015_2019_below_proverty$propcov ^ 4)
+census_final_2015_2019_below_proverty$polypropwrkfromhome <- I(census_final_2015_2019_below_proverty$propwrkfromhome ^ 2)
+census_final_2015_2019_below_proverty$polyproputiltot <- I(census_final_2015_2019_below_proverty$proputiltot ^ 2)
+
+#Log transformations
+census_final_2015_2019_below_proverty$logpropmortgage <- log1p(census_final_2015_2019_below_proverty$propmortgage)
+
+# 10.b.1 Make upfront modeling choices
+census_final_2015_2019_below_proverty_after_transform.naive.lm <- lm(formula = boxcoxproppov ~ 
+                                                                       familysize + 
+                                                                       medage + polymedage +
+                                                                       foodstamp + polyfoodstamp +
+                                                                       propcov + polypropcov +
+                                                                       propwrkfromhome + polypropwrkfromhome +
+                                                                       proputiltot + polyproputiltot, 
+                                                                     data = census_final_2015_2019_below_proverty)
+summary(census_final_2015_2019_below_proverty_after_transform.naive.lm)
+
+
+#But does adding 'n' order terms make sense practically? 
+#The following plot should gives hints as to why it doesn’t
+ggplot(data = census_final_2015_2019_below_proverty, aes(x = medage, y = proppov)) +
+  stat_smooth(method = "lm", se = FALSE, color = "green", formula = y ~ x) +
+  stat_smooth(method = "lm", se = FALSE, color = "blue", formula = y ~ x + I(x ^ 2)) +
+  stat_smooth(method = "lm", se = FALSE, color = "orange", formula = y ~ x + I(x ^ 2)+ I(x ^ 3)) +
+  stat_smooth(method = "lm", se = FALSE, color = "red", formula = y ~ x + I(x ^ 2)+ I(x ^ 3) + I(x ^ 4)) +
+  geom_point(colour = "black", size = 4)
+
+
+#Diagnostic plots with multiple predictors after log-transformation
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(census_final_2015_2019_below_proverty_after_transform.naive.lm)
+
+
+# 10.b.2 Test IID assumptions
+hist(census_final_2015_2019_below_proverty_after_transform.naive.lm$residuals)
+ks.test(census_final_2015_2019_below_proverty_after_transform.naive.lm$residuals/summary(census_final_2015_2019_below_proverty_after_transform.naive.lm)$sigma, pnorm)
+
+plot(census_final_2015_2019_below_proverty_after_transform.naive.lm$fitted.values,census_final_2015_2019_below_proverty_after_transform.naive.lm$residuals)
+bptest(census_final_2015_2019_below_proverty_after_transform.naive.lm)
+
+
+# 10.b.2 Identify best model based on backward elimination
+step(census_final_2015_2019_below_proverty_after_transform.naive.lm,direction='backward')
+
+#best predictors are based the output from leaps package
+census_final_2015_2019_below_proverty_after_transform.lm.best <- lm(formula = boxcoxproppov ~ 
+                                                      familysize + medage + polymedage + 
+                                                      foodstamp + polyfoodstamp + 
+                                                      propcov + proputiltot + polyproputiltot, 
+                                                    data = census_final_2015_2019_below_proverty)
+summary(census_final_2015_2019_below_proverty_after_transform.lm.best)
+
+# 10.b.4 Plot fitted versus residual
+plot(fitted(census_final_2015_2019_below_proverty_after_transform.lm.best), resid(census_final_2015_2019_below_proverty_after_transform.lm.best), col = "dodgerblue",
+     pch = 20, cex = 1.5, xlab = "Fitted", ylab = "Residuals")
+abline(h = 0, lty = 2, col = "darkorange", lwd = 2)
+
+#Looking at a fitted versus residuals plot verifies that there likely are not any issues with the assumptions of this model, 
+#which Breusch-Pagan and Kolmogorov-Smirnov tests verify.
+
+# 10.b.5 Test IID assumptions
+hist(census_final_2015_2019_below_proverty_after_transform.lm.best$residuals)
+ks.test(census_final_2015_2019_below_proverty_after_transform.lm.best$residuals/summary(census_final_2015_2019_below_proverty_after_transform.lm.best)$sigma, pnorm)
+
+plot(census_final_2015_2019_below_proverty_after_transform.lm.best$fitted.values,census_final_2015_2019_below_proverty_after_transform.lm.best$residuals)
+bptest(census_final_2015_2019_below_proverty_after_transform.lm.best)
+
+#Diagnostic plots with multiple predictors
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(census_final_2015_2019_below_proverty_after_transform.lm.best)
+
+# 10.b.6 Save the RMSE (root mean square error, or ‘sigma’) for later.
+RMSE_census_final_2015_2019_below_proverty_after_transform <- summary(census_final_2015_2019_below_proverty_after_transform.lm.best)$sigma
+
+#---------------------------------------------------Q10::BEGIN SUMMARY--------------------------------------------------------#
+
+#Before applying transformation on both response variable and predictor variables, we see residual error decreased to 3.906
+#and the model explains 69% variability in the data
+
+#After apply transformation on both response variable and predictor variables, we see residual error decreased to 0.1241
+#and the new model explains 80% variability in the data
+
+#---------------------------------------------------Q10::END SUMMARY--------------------------------------------------------#
