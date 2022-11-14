@@ -114,7 +114,7 @@ rm(census_wide_2015_2019)
 # ---
 
 # Remove the rows from dataframe that contains at least one NA
-census_final_2015_2019 <- na.omit(census_final_2015_2019)
+census_final_2015_2019 <- na.omit(census_final_2015_2019) 
 
 
 # 2.a What is the change in R^2 between the model with a single predictor and the model with
@@ -122,34 +122,20 @@ census_final_2015_2019 <- na.omit(census_final_2015_2019)
 
 #Regression line with single predictor
 census_final_2015_2019.lm <- lm(propbac ~ medhhinc, data = census_final_2015_2019)
-census_final_2015_2019.lm.summary <- summary(census_final_2015_2019.lm)
-census_final_2015_2019.lm.summary
-
-#Diagnostic plots with single predictor
-layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
-plot(census_final_2015_2019.lm)
-
-#Plotting regression line from actual median household income versus baccalaureate attainment rate 
-ggplot(census_final_2015_2019, aes(x=c(medhhinc), y=propbac)) +
-  geom_point(color='steelblue',) +
-  geom_smooth(method='lm', formula= y~x, se=FALSE, color='turquoise4')  +
-  stat_regline_equation(label.y = 68, aes(label = ..eq.label..)) +
-  stat_regline_equation(label.y = 66, aes(label = ..rr.label..)) +
-  theme_minimal() +
-  labs(x='Median Household Income ($)', 
-       y='Baccalaureate Attainment Rate (%)', 
-       title='Baccalaureate Attainment Rate vs Median Household Income') +
-  theme(plot.title = element_text(hjust=0.5, size=20, face='bold')) 
-
-
-#Regression line with all predictors
+# Regression line with all predictors
 census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019)
-census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
-census_final_2015_2019.lm.all.summary
 
-# diagnostic plots with all predictor
-layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
-plot(census_final_2015_2019.lm.all)
+# Change in R^2 between the two models
+census_final_2015_2019.lm.summary <- summary(census_final_2015_2019.lm)
+summary(census_final_2015_2019.lm)
+census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
+summary(census_final_2015_2019.lm.all)
+
+# Though median household income explain 53.5% variance in college degree attainment. 
+# Factors like health insurance coverage, renter occupied, and percentage of families whose income is 
+# below poverty level help improve model's overall R^2 (71.5% of variance in college degree attainment
+# is now explained due to addition of these variables). It is interesting to note that total 
+# population of a tract and median age of the tract do not have  significant contribution towards the model.
 
 
 # 2.b Perform an ANOVA-based F test to determine whether the difference in explanatory
@@ -159,16 +145,15 @@ plot(census_final_2015_2019.lm.all)
 #This ANVOA will test whether or not including multiple predictor variables propcov,proppov,proprent,totpop,medage 
 #(both models use medhhinc) leads to a significant improvement over using just single predictor variable 'medhhinc'
 
-#ANOVA uses the following null and alternative hypotheses:
-
 #H0: Single predictor is enough to predict the baccalaureate attainment rate (propbac)
 #HA: Single predictor is not enough to predict the baccalaureate attainment rate (propbac)
+
+# H0: the difference in explanatory power between these two models is not significant
+# H1: the difference in explanatory power between these two models is significant
 
 #Compare model with single predictor to model with all predictor
 census_final_2015_2019_anova <- anova(census_final_2015_2019.lm, census_final_2015_2019.lm.all)
 census_final_2015_2019_anova
-summary(census_final_2015_2019_anova)
-
 
 #The larger the F-statistic, the greater the variation between sample means relative to the variation within the samples
 #Thus, the larger the F-statistic, the greater the evidence that there is a difference between the group means
@@ -183,7 +168,6 @@ summary(census_final_2015_2019_anova)
 #   distributions appearing on the same graph. Make the graph as close to publication-ready
 #   as you can. Be prepared to discuss whether the full model has not just added explanatory
 #   power, but improved the fit with OLS (Ordinary Least Squares) model assumptions.
-
 
 census_final_2015_2019.lm.residuals <- data.frame(residuals = census_final_2015_2019.lm[['residuals']])
 census_final_2015_2019.lm.residuals$model <- 'Single'
@@ -203,7 +187,7 @@ ggplot() +
   scale_size_manual(values=c(1, 1.5))+
   labs(x='Residuals Distribution', 
        y='Cumulative Probability Distribution',
-       title="Empirical Densities of the Residuals (Single versus Multiple Predictor Model)",
+       title="Empirical Densities of the Residuals (Single vs All Predictors Model)",
        caption = "Data: 2015-2019 5-year ACS, US Census Bureau, Cook County, IL",
        subtitle = sprintf("Adjusted R-squared (Single): %s, Actual Adjusted R-squared (Multiple): %s", 
                           round(census_final_2015_2019.lm.summary$adj.r.squared, 4), 
@@ -214,7 +198,81 @@ ggplot() +
         panel.background = element_rect(fill = "white", color = NA),
         legend.position = c(0.9, 0.5),
         legend.background = element_rect(fill="lightblue", size=0.5, linetype="solid", colour ="darkblue"))
-theme_minimal()
+
+
+
+#Diagnostic plots with single predictor
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(census_final_2015_2019.lm)
+
+# diagnostic plots with all predictor
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(census_final_2015_2019.lm.all)
+
+
+##############################   ADD KS TEST, DW TEST, BP TEST ###################################
+############################## OLS model assumption need to be checked ###########################
+# There is slight improvement in normality, heteroskedascity, and serial correlation but not significant
+# But still model R^2 improves without affecting OLS assumptions
+# And also Adj R^2
+
+
+# i)Normality
+# Check the normality assumption by creating a Q-Q plot:
+ols_plot_resid_qq(census_final_2015_2019.lm)
+ols_plot_resid_qq(census_final_2015_2019.lm.all)
+#This qq plot shows the distribution of residuals .If the Q-Q plot forms a diagonal line, you can assume that the residuals follow a normal distribution.
+#Here from the plot we can see model with single predictor doesnt follow normal distribution but model with all predictors
+# normality assumption improves since it  does follow a diagonal line mostly,except some deviations in the extremities
+
+# Let's plot a histogram of the residuals to observe this further:
+hist(census_final_2015_2019.lm$residuals, main = "Residual Histogram of Baccalaureate Attainment Rate Model with single predictor")
+hist(census_final_2015_2019.lm.all$residuals, main = "Residual Histogram of Baccalaureate Attainment Rate Model with all predictors")
+
+# The histogram for single predictor model is right skewed whereas all predictor model does follow a normal distribution.
+
+# Also, using hypothesis testing to evaluate normality assumptions:
+# H0 -> The residuals follow a normal distribution
+# H1 -> The residual does not follow a normal distribution
+ols_test_normality(census_final_2015_2019.lm)
+ols_test_normality(census_final_2015_2019.lm.all)
+# As the data has more than 50 observation, We should use the Kolmogorov-Smirnov test to examine the normality of the residuals.
+#P value for single predictor model is below 0.05 , we reject null hypothesis and conclude residuals doesnt follow normal distribution
+# Whereas for all predicctor model the p-value is above 0.05, we failed to reject the null hypothesis and conclude that the residuals do follow a normal distribution.
+
+# ii)Serial correlation
+# Let's check for serial correlation by plotting acf:
+plot(acf(census_final_2015_2019.lm$residuals, type = "correlation"))
+plot(acf(census_final_2015_2019.lm.all$residuals, type = "correlation"))
+# Using hypothesis testing to evalaute serial correlation assumptions:
+# H0 -> There is no first order serial correlation among the residuals
+# H1 -> There is first order serial correlation in residuals
+dwtest(formula = census_final_2015_2019.lm, alternative = "two.sided")
+dwtest(formula = census_final_2015_2019.lm.all, alternative = "two.sided")
+#Pvalue=0.00559 for single predictor model which means p-value < 0.05, thus we reject the NULL hypothesis,
+#hence there is serial correlation among residuals
+# Whereas for all predictor model Since p-value = 0.1803, which means p-value > 0.05, thus we failed to reject the NULL hypothesis
+# We conclude that there is no serial correlation present among the residuals.
+
+# iii) Heteroskedasticity
+# Heteroscedasticity is the situation in which the variance of the residuals of a regression model
+# is not the same across all values of the predicted variable.
+# Check the heteroskedasticity assumption by creating a plot:
+plot(census_final_2015_2019.lm, which = 1)
+plot(census_final_2015_2019.lm.all, which = 1)
+# Both model the plots shows a deviation from horizontal line meaning there is heteroscedasticity.
+# but for all predictor model there is some imporvement.
+
+# Also, using hypothesis testing to evaluate heteroskedasticity assumptions:
+# H0 -> Residuals are distributed with equal variance (i.e homoscedasticity)
+# H1 -> Residuals are distributed with unequal variance (i.e heteroskedasticity)
+lmtest::bptest(census_final_2015_2019.lm)
+lmtest::bptest(census_final_2015_2019.lm.all)
+# p-value is less the significance threshold (alpha) of 0.05, in both  models , we can reject NULL hypothesis
+#and  residuals are distributed with unequal variance thus the residual distribution is heteroskedasticity.
+#but for all predictor model p value is slightly larger hence we some improvemnet in Heteroskedasticity.
+
+# OLS model assumptions imporved for all prdictor model
 
 
 # ---
@@ -223,17 +281,22 @@ theme_minimal()
 # of which to use when deciding future policy actions
 # ---
 
+# Residual spread is closer in  model 2 (ecdf plot)
+# Then OLS assumption are not worse
+# Adj R2 is higher for model 2 and through anova we see it's significant different from model 1
+
 #Mean Square Error(MSE)/Root Mean Square Error(RMSE)
-RMSE_model_1 <- sqrt(mean(census_final_2015_2019.lm.summary$residuals^2))
-sprintf("Root Mean Square Error(RMSE) for Model 1 : %s", round(RMSE_model_1, digits = 4))
-RMSE_model_2 <- sqrt(mean(census_final_2015_2019.lm.all.summary$residuals^2))
-sprintf("Root Mean Square Error(RMSE) for Model 2 : %s", round(RMSE_model_2, digits = 4))
+sqrt(mean(census_final_2015_2019.lm.summary$residuals^2))
+sqrt(mean(census_final_2015_2019.lm.all.summary$residuals^2))
 
 #Mean Absolute Error(MAE)
-MAE_model_1 <- mean(abs(census_final_2015_2019.lm.summary$residuals))
-sprintf("Mean Absolute Error(MAE) for Model 1 : %s", round(MAE_model_1, digits = 4))
-MAE_model_2 <- mean(abs(census_final_2015_2019.lm.all.summary$residuals))
-sprintf("Mean Absolute Error(MAE) for Model 2 : %s", round(MAE_model_2, digits = 4))
+mean(abs(census_final_2015_2019.lm.summary$residuals))
+mean(abs(census_final_2015_2019.lm.all.summary$residuals))
+
+# So RMSE is reduced by 1.91pp in model 2 vs model 1
+# And MAE is reduced by 1.53pp in model 2 vs model 1
+
+# We recommend model 2 given all above factors.
 
 
 #Three main metrics for model evaluation in regression. R-Square/Adjusted-R Square is better used to explain the model 
@@ -262,27 +325,30 @@ sprintf("Mean Absolute Error(MAE) for Model 2 : %s", round(MAE_model_2, digits =
 #Discuss amongst your group whether each of the predictors fit into one of these three categories
 # ---
 
+## now that we know model 2 is performing better and should be the preffered model for making policy decisions
+## we look at the variables
+
+summary(census_final_2015_2019.lm.all)
+
+
 # 4.a Predictors with no significant explanatory power
 
-summary(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019))
-summary(lm(propbac ~ medhhinc+propcov+proppov+proprent, data = census_final_2015_2019))
-anova(lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019))
-
-#For coefficient to be statistically significant, we usually want a P-value of less than 0.05. Here totpop (Total population) 
-#and medage (Median age) has P-value greater than 0.05 and hence has no significant explanatory power.
-#Besides without the predictors 'Total population' and 'Median age' added to the model, the R-squared and Adjusted R-squared are
-#negligible affected
+# Total population and median age do not have statistically greater contribution to the model
+# And thus have no explanatory power.
 
 
 # 4.b Predictors with explanatory power, useful as control variables, but without a policy “lever” that 
-#decision makers could use to increase college degree attainment
+# decision makers could use to increase college degree attainment
 
+# Confused about this one as there is none factor that cannot be affected by policy lever
 
-#Predictors like medhhinc (Median household income) has statistically significant explanatory power because it 
-#explains 53% of the baccalaureate attainment rate in the model.
 
 
 # 4.c Predictors with both explanatory power and a corresponding policy “lever”
+
+# health coverage can be improved
+# renter occupied can be subsidized 
+# median income and poverty line can be reduced by lower taxes / giving better unemployment benefits / basic income
 
 #proprent (Renter-occupied) has P-value way lesser than 0.05 and second biggest contributor to R-squared after medhhinc (Median household income). 
 #County executives has the power to increase the baccalaureate attainment rates by introducing new ordinances about what 
@@ -319,16 +385,37 @@ census_final_2015_2019.lm.all.summary
 
 #Predicting the existing average college degree attainment rate for Cook County
 attainment_rate_actual <- predict(census_final_2015_2019.lm.all, newdata= list(medhhinc=medhhinc_mean, propcov=propcov_mean, proppov=proppov_mean, proprent=proprent_mean))
+attainment_rate_actual
 
 #Adjusting the predictor variable values to desired amount to get the 5% increase in 
 #college degree attainment rate for Cook County
 
-medhhinc_target <- medhhinc_mean +  (medhhinc_mean*5.5)/100
-propcov_target <- propcov_mean +  (propcov_mean*7)/100
-proppov_target <- proppov_mean - (proppov_mean*0.1)/100
-proprent_target <- proprent_mean +  (proprent_mean*5)/100
+medhhinc_target <- medhhinc_mean #+  (medhhinc_mean*5.5)/100
+propcov_target <- propcov_mean #+  (propcov_mean*7)/100
+proppov_target <- 0 #proppov_mean #- (proppov_mean*0.1)/100
+proprent_target <- proprent_mean #+  (proprent_mean*5)/100
 
 attainment_rate_target <- predict(census_final_2015_2019.lm.all, newdata= list(medhhinc=medhhinc_target, propcov=propcov_target, proppov=proppov_target, proprent=proprent_target))
+attainment_rate_target
+attainment_rate_actual
+
+# Take the tracts with proppov that is in the lowest 25th percentile and reduce proppov to 0% and increase propcov to 100% and proprent to 100%
+modify_census_for_best_scenario <- census_final_2015_2019
+# view(modify_census_for_best_scenario[modify_census_for_best_scenario$proppov >= 25,])
+modify_census_for_best_scenario$propcov[modify_census_for_best_scenario$medhhinc <= 40000] <- 100
+modify_census_for_best_scenario$proprent[modify_census_for_best_scenario$medhhinc <= 40000] <- 100
+modify_census_for_best_scenario$proppov[modify_census_for_best_scenario$medhhinc <= 40000] <- 0
+
+# view(modify_census_for_best_scenario)
+
+medhhinc_target <- mean(modify_census_for_best_scenario$medhhinc)
+propcov_target <- mean(modify_census_for_best_scenario$propcov)
+proppov_target <- mean(modify_census_for_best_scenario$proppov)
+proprent_target <- mean(modify_census_for_best_scenario$proprent)
+
+attainment_rate_target <- predict(census_final_2015_2019.lm.all, newdata= list(medhhinc=medhhinc_target, propcov=propcov_target, proppov=proppov_target, proprent=proprent_target))
+attainment_rate_target
+attainment_rate_actual
 
 #By increasing Median household income by 5.5%, Health insurance coverage by 7%, Renter-occupied by 5% and decreasing 
 #poverty level by 0.1%, we have roughly achieved the targeted college degree attainment rate for Cook County
@@ -342,7 +429,7 @@ attainment_rate_target <- predict(census_final_2015_2019.lm.all, newdata= list(m
 #Flag which tracts belong to Cook County, IL.
 # ---
 
-acs_var <- c('DP05_0001E','DP02_0065PE','DP02_0058PE')
+acs_var <- c('DP05_0001E','DP02_0065PE')
 us_states <- c("AK","AL","AR","AZ","CA","CO","CT","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY",
                "LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY",
                "OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY")
@@ -358,44 +445,39 @@ all_census_tidy_2015_2019 <- all_census_tidy_2015_2019 %>%
     TRUE ~ 0
   ))
 
+#Drop the columns that are not required
+all_census_2015_2019 <- all_census_tidy_2015_2019[,!(names(all_census_tidy_2015_2019) %in% c("DP05_0001M", "DP02_0065PM"))]
 
-# 6.a Filter to tracts with non-missing population, non-missing college degree data, and
-#population of at least 100.
+colnames(all_census_2015_2019)
+head(all_census_2015_2019)
 
-
-# Remove the rows from dataframe that contains at least one NA
-all_census_tidy_2015_2019 <- all_census_tidy_2015_2019[!(is.na(all_census_tidy_2015_2019$DP02_0065PE) | is.na(all_census_tidy_2015_2019$DP05_0001E) | is.na(all_census_tidy_2015_2019$DP02_0058PE)), ]
-all_census_tidy_2015_2019 <- na.omit(all_census_tidy_2015_2019)
 
 #Rename the remaining columns
-all_census_2015_2019 <- all_census_tidy_2015_2019 %>%  
-  rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065PE', 'totpop' = 'DP05_0001E', 'graduateschool' = 'DP02_0058PE')
+all_census_2015_2019 <- all_census_2015_2019 %>%  
+  rename('geoid' = 'GEOID', 'name' = 'NAME', 'propbac' = 'DP02_0065PE', 'totpop' = 'DP05_0001E')
 
-#Drop the columns that are not required
-all_census_2015_2019 <- all_census_2015_2019[,!(names(all_census_2015_2019) %in% c("DP05_0001M", "DP02_0065PM", "DP02_0058PM"))]
 
-#Filter to population of at least 100
-all_census_final_2015_2019 <- filter(all_census_2015_2019, totpop >= 100)
-
-#Remove the rows from dataframe that contains at least one NA
-all_census_final_2015_2019 <- na.omit(all_census_final_2015_2019)
-
+# 6.a Filter to tracts with non-missing population, non-missing college degree data, and
+# population of at least 100.
+all_census_final_2015_2019<- all_census_2015_2019[
+  all_census_2015_2019$totpop >= 100 
+  & !is.na(all_census_2015_2019$propbac)
+  & !is.na(all_census_2015_2019$totpop),
+]
 
 
 # 6.b Calculate the national average for tract-level college degree attainment, using both an
 #equal-weight average as well as weighting by population. For these calculations, exclude
 #Cook County, IL.
 
-#Exclude- Cook County, IL.
 all_census_exclude_cook_county_2015_2019 <- filter(all_census_final_2015_2019, iscookcounty == 0)
 
 all_census_exclude_cook_county_2015_2019["totpop_percentage"] = all_census_exclude_cook_county_2015_2019$totpop/(sum(all_census_exclude_cook_county_2015_2019$totpop))
 all_propbac_exclude_cook_county_mean <- mean(all_census_exclude_cook_county_2015_2019$propbac)
 all_propbac_exclude_cook_county_weighted_mean <- sum(all_census_exclude_cook_county_2015_2019$totpop_percentage*all_census_exclude_cook_county_2015_2019$propbac)
 
-
-sprintf("The national average for tract-level college degree attainment using both an equal-weight average as well as weighting by population exclude
-Cook County, IL is %s", round(all_propbac_exclude_cook_county_weighted_mean, digits = 4))
+all_propbac_exclude_cook_county_mean
+all_propbac_exclude_cook_county_weighted_mean
 
 
 # 6.c Perform a hypothesis test of whether the tracts from Cook County could share the same
@@ -415,12 +497,19 @@ all_census_only_cook_county_2015_2019["totpop_percentage"] = all_census_only_coo
 all_propbac_only_cook_county_mean <- mean(all_census_only_cook_county_2015_2019$propbac)
 all_propbac_only_cook_county_weighted_mean <- sum(all_census_only_cook_county_2015_2019$totpop_percentage*all_census_only_cook_county_2015_2019$propbac)
 
-sprintf("The Cook County average for tract-level college degree attainment using equal-weight average by population 
-        is %s", round(all_propbac_only_cook_county_weighted_mean, digits = 4))
+all_propbac_only_cook_county_mean
+all_propbac_only_cook_county_weighted_mean
+
+# Performing t-test for hypothesis testing
+mean(all_census_final_2015_2019$propbac[all_census_final_2015_2019$iscookcounty==1])
+sd(all_census_final_2015_2019$propbac[all_census_final_2015_2019$iscookcounty==1])
+
+#one sample t test comparing CookCounty propbac to national mean of propbac
+t.test(x=all_census_final_2015_2019$propbac[all_census_final_2015_2019$iscookcounty==1], mu = all_propbac_exclude_cook_county_mean, alternative = "two.sided", paired = FALSE)
 
 
 #Cook County equal-weighted average college degree attainment rate is '22.2978' greater than the national average
-#of '19.4961'. Hence we are rejecting the NULL hypothesis (H0)
+#of '19.4961'. Hence we are rejecting the NULL hypothesis (H0) meaning distrubutions are from different
 
 
 
@@ -522,8 +611,53 @@ sprintf("90 percentage confidence interval for the predicted college degree atta
 #calculate 10,000 predictions for the Gleacher/NBC tract. Compare a 90% interval formed
 #from these simulations to the 90% CI produced in (a) above.
 
+census_final_2015_2019.lm.all
 
-#TODO
+
+# betas
+int <- census_final_2015_2019.lm.all$coefficient[1]
+b1 <- census_final_2015_2019.lm.all$coefficient[2]
+b2 <- census_final_2015_2019.lm.all$coefficient[3]
+b3 <- census_final_2015_2019.lm.all$coefficient[4]
+b4 <- census_final_2015_2019.lm.all$coefficient[5]
+b5 <- census_final_2015_2019.lm.all$coefficient[6]
+b6 <- census_final_2015_2019.lm.all$coefficient[7]
+
+# std errors
+se.int <- census_final_2015_2019.lm.all.summary$coefficients[1,2]
+se.b1 <- census_final_2015_2019.lm.all.summary$coefficients[2,2]
+se.b2 <- census_final_2015_2019.lm.all.summary$coefficient[3,2]
+se.b3 <- census_final_2015_2019.lm.all.summary$coefficient[4,2]
+se.b4 <- census_final_2015_2019.lm.all.summary$coefficient[5,2]
+se.b5 <- census_final_2015_2019.lm.all.summary$coefficient[6,2]
+se.b6 <- census_final_2015_2019.lm.all.summary$coefficient[7,2]
+
+# variables for GleacherNBCTract
+var1.GleacherNBCTract <- census_tract_814_03$medhhinc
+var2.GleacherNBCTract <- census_tract_814_03$propcov
+var3.GleacherNBCTract <- census_tract_814_03$proppov
+var4.GleacherNBCTract <- census_tract_814_03$proprent
+var5.GleacherNBCTract <- census_tract_814_03$totpop
+var6.GleacherNBCTract <- census_tract_814_03$medage
+
+#set seed for samples
+set.seed(20221111)
+#make sample betas using beta +/- se
+sample.df <- data.frame(matrix(ncol = 6, nrow = 10000))
+
+sample.df[,1] <- runif(10000,(b1-se.b1),(b1+se.b1))
+sample.df[,2] <- runif(10000,(b2-se.b2),(b2+se.b2))
+sample.df[,3] <- runif(10000,(b3-se.b3),(b3+se.b3))
+sample.df[,4] <- runif(10000,(b4-se.b4),(b4+se.b4))
+sample.df[,5] <- runif(10000,(b5-se.b5),(b5+se.b5))
+sample.df[,6] <- runif(10000,(b6-se.b6),(b6+se.b6))
+#use samples to generate 10k predictions
+sample.predictions <- int + (sample.df[,1]*var1.GleacherNBCTract) + (sample.df[,2]*var2.GleacherNBCTract) + (sample.df[,3]*var3.GleacherNBCTract) + (sample.df[,4]*var4.GleacherNBCTract) + (sample.df[,5]*var5.GleacherNBCTract) + (sample.df[,6]*var6.GleacherNBCTract)
+
+#find 90 percent confidence
+quantile(sample.predictions, probs = c(.05,.95))
+
+# t.test(x=sample.predictions, mu = census_tract_814_03$propbac)
 
 # ---
 # Perform Step 8
@@ -535,6 +669,35 @@ sprintf("90 percentage confidence interval for the predicted college degree atta
 #relevant.
 # ---
 
+# Restore data and model results
+head(census_final_2015_2019)
+summary(census_final_2015_2019.lm.all)
+
+# Check the actual, residuals and fitted values
+head(census_final_2015_2019$propbac)
+head(census_final_2015_2019.lm.all$residuals)
+head(census_final_2015_2019.lm.all$fitted.values)
+
+# Store residual in df
+df_public_school_program <- census_final_2015_2019
+df_public_school_program$model_residuals <- census_final_2015_2019.lm.all$residuals
+df_public_school_program$propbac_pred <- census_final_2015_2019.lm.all$fitted.values
+
+# Store residuals's lower quartile data in df
+lower_quartile <- quantile(df_public_school_program$model_residuals, probs = 0.25)
+df_public_school_program_residual_lower_quartile <- df_public_school_program[df_public_school_program$model_residuals <= lower_quartile,]
+
+# Explore residuals's lower quartile data across variables vs actual data
+summary(df_public_school_program_residual_lower_quartile)
+summary(census_final_2015_2019)
+
+# Store fitted value's lower quartile data in df
+lower_quartile <- quantile(df_public_school_program$propbac_pred, probs = 0.25)
+df_public_school_program_predicted_lower_quartile <- df_public_school_program[df_public_school_program$propbac_pred <= lower_quartile,]
+
+# Explore fitted value's lower quartile data across variables vs actual data
+summary(df_public_school_program_residual_lower_quartile)
+summary(census_final_2015_2019)
 #Liner model with all predictors
 census_final_2015_2019.lm.all <- lm(propbac ~ medhhinc+propcov+proppov+proprent+totpop+medage, data = census_final_2015_2019)
 census_final_2015_2019.lm.all.summary <- summary(census_final_2015_2019.lm.all)
